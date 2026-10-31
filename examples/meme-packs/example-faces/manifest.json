@@ -1,0 +1,8 @@
+{
+  "id": "example-faces",
+  "name": "Example faces",
+  "version": "1.0.0",
+  "maintainer": "dsh-persona-kit",
+  "license": "MIT",
+  "description": "Twelve plain emoji-style faces drawn for this plugin (no third-party art), to try the sticker features."
+}

@@ -1,0 +1,4 @@
+- insert:
+    - id: persona-kit
+      name: dsh-persona-kit
+      config: {}

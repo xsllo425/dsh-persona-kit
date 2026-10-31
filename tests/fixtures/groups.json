@@ -1,0 +1,339 @@
+{
+  "//": "presets：按 DSH 模式（agent preset id）决定哪些组默认收起；没列出的模式不管。noPreset：没有模式的会话。personas：装了 dsh-persona-switcher 且这个会话有人设记录时，用人设的名单替换模式的名单。",
+  "followPersona": false,
+  "idleTurns": 2,
+  "presets": {
+    "standard": [
+      "browser",
+      "computer",
+      "media",
+      "visualize",
+      "search",
+      "feed",
+      "import",
+      "terminal",
+      "imagegen",
+      "dream",
+      "peer",
+      "agent-team",
+      "orchestration",
+      "mcp-resources",
+      "session-forensics",
+      "meme",
+      "schedule"
+    ]
+  },
+  "noPreset": [
+    "browser",
+    "computer",
+    "media",
+    "visualize",
+    "search",
+    "feed",
+    "import",
+    "terminal",
+    "imagegen",
+    "dream",
+    "peer",
+    "agent-team",
+    "orchestration",
+    "mcp-resources",
+    "session-forensics",
+    "meme",
+    "schedule"
+  ],
+  "personas": {},
+  "groups": {
+    "browser": {
+      "title": "浏览器自动化",
+      "tools": [
+        "bsk_*"
+      ],
+      "skills": [
+        "browser-skill"
+      ],
+      "triggers": [
+        "浏览器自动化",
+        "操控浏览器",
+        "控制浏览器",
+        "用浏览器打开",
+        "/browser-skill"
+      ]
+    },
+    "computer": {
+      "title": "电脑操控",
+      "tools": [
+        "computer",
+        "computer_batch",
+        "ui_elements",
+        "windows",
+        "clipboard",
+        "open_application",
+        "switch_display",
+        "request_access",
+        "list_granted_applications",
+        "mcp__wincu__*"
+      ],
+      "triggers": [
+        "操控电脑",
+        "电脑操控",
+        "控制电脑",
+        "操作电脑",
+        "看屏幕",
+        "截屏",
+        "computer use",
+        "截图",
+        "点一下",
+        "帮我点",
+        "操作桌面",
+        "桌面程序",
+        "识别屏幕",
+        "ocr"
+      ],
+      "section": {
+        "name": "computer-use:guide",
+        "order": 72,
+        "text": "电脑操控工具（截屏、读界面元素、OCR、点鼠标、按键、开窗口，共 25 个）在本会话里还没有启用。用户要你看屏幕、点鼠标、操作桌面程序时，先调用 enable_tools，groups 填 [\"computer\"]，工具从下一步开始可用；用户消息里出现「截屏」「看屏幕」等词会自动放开。"
+      }
+    },
+    "media": {
+      "title": "生成图片和视频",
+      "tools": [
+        "image_generate",
+        "codex_image_generate",
+        "video_generate"
+      ],
+      "triggers": [
+        "生成图片",
+        "生成一张图片",
+        "生图",
+        "出图",
+        "生成视频",
+        "生视频",
+        "做个视频"
+      ]
+    },
+    "visualize": {
+      "title": "可视化界面",
+      "tools": [
+        "visualize"
+      ],
+      "triggers": [
+        "可视化界面",
+        "可视化",
+        "visualize",
+        "交互卡片",
+        "画一张图",
+        "画张图"
+      ]
+    },
+    "search": {
+      "title": "高级搜索",
+      "tools": [
+        "domain_search",
+        "advanced_search",
+        "multi_search",
+        "platform_search",
+        "x_search",
+        "video_search",
+        "research",
+        "weather",
+        "free_search_test"
+      ],
+      "triggers": [
+        "深度搜索",
+        "多源搜索",
+        "高级搜索",
+        "全网搜",
+        "搜视频",
+        "搜推特",
+        "查天气",
+        "天气"
+      ],
+      "section": {
+        "name": "free-search:engines",
+        "order": 500,
+        "text": "web_search 和 web_fetch 可以直接用：搜索只返回候选结果（链接、标题、摘要），需要正文时再对选中的链接调用 web_fetch。更多搜索工具（domain_search、research、x_search、video_search、weather 等）在本会话里还没有启用，需要时先调用 enable_tools，groups 填 [\"search\"]。"
+      }
+    },
+    "feed": {
+      "title": "资讯日报",
+      "tools": [
+        "feed_*"
+      ],
+      "triggers": [
+        "资讯日报",
+        "今日资讯",
+        "feed digest"
+      ]
+    },
+    "import": {
+      "title": "导入其他 AI 工具的对话",
+      "tools": [
+        "import_chat"
+      ],
+      "triggers": [
+        "导入聊天",
+        "导入对话",
+        "导入会话"
+      ]
+    },
+    "terminal": {
+      "title": "交互式终端",
+      "tools": [
+        "terminal_*"
+      ],
+      "triggers": [
+        "终端窗口",
+        "交互式终端",
+        "命令行窗口",
+        "持续运行的终端",
+        "terminal"
+      ]
+    },
+    "imagegen": {
+      "title": "生图",
+      "tools": [
+        "generate_image",
+        "edit_image",
+        "get_image_generation_task",
+        "cancel_image_generation_task"
+      ],
+      "triggers": [
+        "生图",
+        "画图",
+        "画一张",
+        "画个",
+        "画两",
+        "出图",
+        "生成图片",
+        "生成图",
+        "改图",
+        "修图",
+        "做张图",
+        "再来一张"
+      ]
+    },
+    "dream": {
+      "title": "做梦复盘",
+      "tools": [
+        "dream_*"
+      ],
+      "skills": [
+        "dream-protocol"
+      ],
+      "triggers": [
+        "做梦",
+        "记梦",
+        "忆梦",
+        "翻梦",
+        "入梦",
+        "学梦",
+        "梦境",
+        "复盘"
+      ]
+    },
+    "peer": {
+      "title": "跨会话协作",
+      "tools": [
+        "peer_*"
+      ],
+      "triggers": [
+        "跨会话",
+        "另一个会话",
+        "别的会话",
+        "会话之间",
+        "peer_"
+      ]
+    },
+    "agent-team": {
+      "title": "多智能体团队",
+      "tools": [
+        "spawn_teammate",
+        "wait_agent",
+        "interrupt_agent",
+        "team_task_*"
+      ],
+      "triggers": [
+        "团队",
+        "队友",
+        "多智能体",
+        "agent team",
+        "组建团队",
+        "开个团队"
+      ]
+    },
+    "orchestration": {
+      "title": "工作流与分支",
+      "tools": [
+        "workflow",
+        "subagent_fork",
+        "create_worktree"
+      ],
+      "triggers": [
+        "工作流",
+        "workflow",
+        "大规模并行",
+        "多智能体编排",
+        "分叉",
+        "worktree"
+      ]
+    },
+    "mcp-resources": {
+      "title": "MCP 资源",
+      "tools": [
+        "read_mcp_resource",
+        "list_mcp_resources",
+        "list_mcp_resource_templates"
+      ],
+      "triggers": [
+        "mcp 资源",
+        "资源模板",
+        "列出资源"
+      ]
+    },
+    "session-forensics": {
+      "title": "会话溯源",
+      "tools": [
+        "session_trace",
+        "session_event_*"
+      ],
+      "triggers": [
+        "上次那个",
+        "之前那个",
+        "以前的会话",
+        "历史会话",
+        "之前的会话",
+        "回溯会话",
+        "会话记录",
+        "session_search"
+      ]
+    },
+    "meme": {
+      "title": "表情图库收录",
+      "tools": [
+        "learn_meme"
+      ],
+      "triggers": [
+        "收藏这个表情",
+        "收进图库",
+        "收录表情",
+        "学图"
+      ]
+    },
+    "schedule": {
+      "title": "定时与提醒",
+      "tools": [
+        "schedule_*"
+      ],
+      "triggers": [
+        "定时",
+        "提醒",
+        "每天",
+        "每周",
+        "计划任务",
+        "自动化任务"
+      ]
+    }
+  }
+}
