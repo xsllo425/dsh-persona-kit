@@ -9,3 +9,4 @@ tmp/
 *.bak
 *.bak-*
 *.corrupt-*
+docs/waiting-phrases.md
