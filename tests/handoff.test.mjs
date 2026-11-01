@@ -20,6 +20,8 @@ function setupInto(dir, { controller, tokens = 400_000, meter = true, projection
   const services = { sessionController: controller }
   if (meter) services.tokenMeter = { measure: () => ({ totalTokens: state.tokens }) }
   if (projection) services.sessionProjections = { stateOf: (_session, key) => projection[key] }
+  // a meter reading is only trusted when there is a window to compare it against
+  else if (meter) services.sessionProjections = { stateOf: (_session, key) => (key === 'contextPressure' ? { contextWindow: 1_048_576 } : undefined) }
   const logger = {}
   for (const level of ['info', 'warn', 'error']) logger[level] = (msg) => logs.push([level, msg])
   const ctx = {
@@ -102,11 +104,22 @@ test('with neither a meter nor a projection it warns once instead of failing sil
   rmSync(dir, { recursive: true, force: true })
 })
 
-test('without any projection the lifetime totals still fire the notice', async () => {
+test('lifetime totals are never used when the context pressure is missing', async () => {
   const projection = { tokenUsage: { totals: { uncachedInputTokens: 300_000, cacheReadTokens: 90_000, outputTokens: 20_000 } } }
   const { dir, measure } = setup({ meter: false, projection })
-  // last-resort path: 410k of tokens, over the first threshold (400k), no meter and no context pressure
-  assert.equal((await measure('s3')).messages.length, 1)
+  // 410k of lifetime tokens without a window to compare against: not a reason to nag
+  assert.equal((await measure('s3')).messages.length, 0)
+  rmSync(dir, { recursive: true, force: true })
+})
+
+test('a small session stays quiet even with hundreds of millions of lifetime tokens', async () => {
+  // exactly what happened in the wild: 8 % of the window, but the cumulative totals were ~190M
+  const projection = {
+    contextPressure: { pressureTokens: 80_136, contextWindow: 1_000_000 },
+    tokenUsage: { totals: { uncachedInputTokens: 14_762_838, cacheReadTokens: 175_049_472, outputTokens: 315_857 } },
+  }
+  const { dir, measure } = setup({ meter: false, projection, triggerPercent: 10, secondPercent: 50 })
+  assert.equal((await measure('s3')).messages.length, 0)
   rmSync(dir, { recursive: true, force: true })
 })
 
