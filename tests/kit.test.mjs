@@ -104,6 +104,63 @@ test('no role / no pack', () => {
   assert.equal(kit.queue('s3', {}).ok, false)
 })
 
+test('previewing candidates never disturbs a sticker the model already queued', () => {
+  const kit = mk()
+  kit.setLevel('s1', 2)
+  // queue one for real, then look around three times
+  assert.equal(kit.queue('s1', { mood: 'sad' }).ok, true)
+  for (let i = 0; i < 3; i++) {
+    const p = kit.preview('s1', { mood: 'sad' })
+    assert.equal(p.ok, true)
+    assert.ok(Array.isArray(p.memes))
+    assert.ok(p.memes.length > 0)
+    // a preview offers candidates and carries no absolute path
+    assert.equal(p.memes[0].path, undefined)
+    assert.ok(p.memes.every((m) => typeof m.id === 'string' && m.id.includes('/')))
+  }
+  // the queued sticker is still the one the turn draws, and it is drawn exactly once
+  const r = kit.pick('s1', { text: '随便说点什么' })
+  assert.equal(r.why, 'model')
+  assert.match(r.url, /memes\/sad\/1\.png/)
+  assert.notEqual(kit.pick('s1', { text: '随便' }).why, 'model')
+})
+
+test('a preview without a queued sticker leaves nothing behind for the next turn', () => {
+  const kit = mk()
+  kit.setLevel('s1', 2)
+  const p = kit.preview('s1', { query: '开心' })
+  assert.equal(p.ok, true)
+  // previewing is not sending: the turn's own decision stands, unforced by the preview
+  assert.notEqual(kit.pick('s1', { text: '完成任务了' }).why, 'model')
+})
+
+test('preview can be limited and can name one pack', () => {
+  const kit = mk()
+  kit.setLevel('s1', 2)
+  assert.equal(kit.preview('s1', { limit: 1 }).memes.length, 1)
+  assert.equal(kit.preview('s1', { limit: 0 }).memes.length, 2)      // not a positive number: the default, and there are only two
+  assert.equal(kit.preview('s1', { limit: 999 }).memes.length, 2)     // clamped down; there are only two
+  const named = kit.preview('s1', { packId: 'bob-pack' })
+  assert.ok(named.memes.every((m) => String(m.id).startsWith('bob-pack/')))
+  // an unknown pack falls back to the role's own packs instead of returning nothing
+  assert.ok(kit.preview('s1', { packId: 'no-such-pack' }).memes.length > 0)
+})
+
+test('a preview on a session without a role says why, and sends nothing', () => {
+  const kit = mk()
+  const p = kit.preview('s3', {})
+  assert.equal(p.ok, false)
+  assert.deepEqual(p.memes, [])
+})
+
+test('send_sticker can draw from one named pack', () => {
+  const kit = mk()
+  kit.setLevel('s2', 2)
+  const q = kit.queue('s2', { packId: 'alice-pack' })
+  assert.equal(q.ok, true)
+  assert.match(kit.pick('s2', { text: 'x' }).url, /alice-pack\//)
+})
+
 test('sticker files are served only from the pack index', () => {
   const kit = mk()
   assert.ok(kit.library.fileOf('alice-pack', 'memes/happy/1.png'))
@@ -356,6 +413,55 @@ test('achievements: a role card can count a phrase in her replies', () => {
   assert.ok(kit.store.unlocked()['say-hi@alice'])
   assert.equal(kit.achievementList('alice').find((x) => x.id === 'say-hi').unlocked, true)
   assert.equal(kit.achievementList('bob').find((x) => x.id === 'say-hi'), undefined) // role achievements stay with their role
+})
+
+test('achievements: a hidden badge never sends its condition before it is earned', () => {
+  const kit = mk()
+  const hidden = kit.achievementList('').find((x) => x.id === 'secret-night')
+  assert.ok(hidden)
+  assert.equal(hidden.hidden, true)
+  assert.equal(hidden.unlocked, false)
+  assert.equal(hidden.desc, '') // masked on the server: the network answer carries nothing either
+  assert.equal(hidden.gte, 0)
+  assert.equal(hidden.value, 0)
+  const open = kit.achievementList('').find((x) => x.id === 'chat-1000')
+  assert.ok(open.desc && open.gte === 1000) // an ordinary locked badge still says what it takes
+  kit.store.bump('nightTurns', 100)
+  kit.checkAchievements('')
+  const got = kit.achievementList('').find((x) => x.id === 'secret-night')
+  assert.equal(got.unlocked, true)
+  assert.equal(got.gte, 100)
+  assert.ok(got.desc && got.at > 0)
+})
+
+test('achievements: the panel summary counts days and both streaks, and every series adds up', () => {
+  const kit = mk()
+  const sessions = JSON.parse(readFileSync(kit.config.roleSessionsFile, 'utf8'))
+  sessions.sessions.sm = { role: 'bob' }
+  writeFileSync(kit.config.roleSessionsFile, JSON.stringify(sessions))
+  kit.userTurn('sm')
+  const view = kit.achievementView('bob')
+  assert.equal(view.summary.total, view.list.length)
+  assert.equal(view.summary.badges, view.list.filter((x) => x.unlocked).length)
+  assert.equal(view.summary.days, kit.store.statsOf().days.length)
+  assert.ok(view.summary.turns > 0)
+  assert.ok(view.summary.streakNow >= 1 && view.summary.streakBest >= view.summary.streakNow)
+  assert.deepEqual(view.series.map((s) => s.id), ['chat', 'day', 'meet', 'bond', 'work', 'role', 'secret'])
+  assert.equal(view.series.reduce((n, s) => n + s.total, 0), view.list.length)
+  assert.ok(view.series.every((s) => s.got <= s.total))
+  assert.ok(view.series.every((s) => typeof s.name === 'string' && s.name))
+})
+
+test('achievements: an unknown series falls back instead of dropping the badge', () => {
+  const kit = mk()
+  const fs = { writeFileSync }
+  const cardFile = join(kit.config.rolesDir, 'bob', 'card.json')
+  const card = JSON.parse(readFileSync(cardFile, 'utf8'))
+  card.achievements = [{ id: 'odd', name: 'Odd', desc: 'x', metric: 'turns', gte: 1, series: 'not-a-series' }]
+  fs.writeFileSync(cardFile, JSON.stringify(card))
+  const item = kit.achievementView('bob').list.find((x) => x.id === 'odd')
+  assert.equal(item.series, 'role')
+  assert.ok(kit.achievementView('bob').series.some((s) => s.id === 'role'))
 })
 
 test('the own role switcher is off unless the config asks for it', () => {

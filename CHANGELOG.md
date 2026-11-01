@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Achievements grew into a catalog: **40 badges in 7 series** (chat, days, meetings, bond, working together, role, secrets). The panel is now a seal wall with a stats header (badges, days, current streak, best streak, turns), per-series counts, filters for earned / still waiting, and a details line under the filters. Four **secret** badges keep their condition — description, threshold and progress — on the server until they are earned; the panel only learns the name before that.
+- Switching sessions no longer makes the composer pill fall back to the plain 「人设」 label: a new `GET /sessions` answer says which role every session is on, so the pill draws that role straight away while `/session` for the new session is still in flight.
 - Chinese is now the default language (`"language": "zh"`; `"auto"` still follows the machine).
 - Five ready-made roles in `presets/roles` (`node tools/install-examples.mjs --presets`), with each role's own sticker pack in `presets/meme-packs`.
 - README rewritten as a landing page; the full reference moved to `docs/MANUAL.md`.

@@ -1,325 +1,212 @@
 {
   "global": [
     {
-      "id": "first-words",
-      "name": "初次见面",
-      "desc": "和任意角色聊第一句话",
-      "metric": "turnsTotal",
-      "gte": 1,
-      "en": {
-        "name": "First hello",
-        "desc": "Say your first words to any role"
-      }
+      "id": "first-words", "name": "初次见面", "desc": "和任意角色聊第一句话",
+      "metric": "turnsTotal", "gte": 1, "series": "chat",
+      "en": { "name": "First hello", "desc": "Say your first words to any role" }
     },
     {
-      "id": "chat-50",
-      "name": "聊得来",
-      "desc": "一共聊满 50 轮",
-      "metric": "turnsTotal",
-      "gte": 50,
-      "en": {
-        "name": "Getting along",
-        "desc": "Chat 50 turns in total"
-      }
+      "id": "chat-50", "name": "聊得来", "desc": "一共聊满 50 轮",
+      "metric": "turnsTotal", "gte": 50, "series": "chat",
+      "en": { "name": "Getting along", "desc": "Chat 50 turns in total" }
     },
     {
-      "id": "chat-300",
-      "name": "话匣子",
-      "desc": "一共聊满 300 轮",
-      "metric": "turnsTotal",
-      "gte": 300,
-      "en": {
-        "name": "Chatterbox",
-        "desc": "Chat 300 turns in total"
-      }
+      "id": "chat-300", "name": "话匣子", "desc": "一共聊满 300 轮",
+      "metric": "turnsTotal", "gte": 300, "series": "chat",
+      "en": { "name": "Chatterbox", "desc": "Chat 300 turns in total" }
     },
     {
-      "id": "chat-1000",
-      "name": "无话不谈",
-      "desc": "一共聊满 1000 轮",
-      "metric": "turnsTotal",
-      "gte": 1000,
-      "en": {
-        "name": "Nothing left unsaid",
-        "desc": "Chat 1000 turns in total"
-      }
+      "id": "chat-1000", "name": "无话不谈", "desc": "一共聊满 1000 轮",
+      "metric": "turnsTotal", "gte": 1000, "series": "chat",
+      "en": { "name": "Nothing left unsaid", "desc": "Chat 1000 turns in total" }
+    },
+
+    {
+      "id": "streak-3", "name": "三天不断", "desc": "连续 3 天都来聊天",
+      "metric": "streak", "gte": 3, "series": "day",
+      "en": { "name": "Three in a row", "desc": "Come back 3 days in a row" }
     },
     {
-      "id": "meet-3",
-      "name": "见多识广",
-      "desc": "和 3 个不同的角色聊过天",
-      "metric": "rolesMet",
-      "gte": 3,
-      "en": {
-        "name": "Well acquainted",
-        "desc": "Chat with 3 different roles"
-      }
+      "id": "streak-7", "name": "七日之约", "desc": "连续 7 天都来聊天",
+      "metric": "streak", "gte": 7, "series": "day",
+      "en": { "name": "A week's promise", "desc": "Come back 7 days in a row" }
     },
     {
-      "id": "meet-all",
-      "name": "全员集合",
-      "desc": "和 5 个不同的角色聊过天",
-      "metric": "rolesMet",
-      "gte": 5,
-      "en": {
-        "name": "Everyone is here",
-        "desc": "Chat with 5 different roles"
-      }
+      "id": "streak-30", "name": "月月相伴", "desc": "连续 30 天都来聊天",
+      "metric": "streak", "gte": 30, "series": "day",
+      "en": { "name": "Month by month", "desc": "Come back 30 days in a row" }
     },
     {
-      "id": "sessions-10",
-      "name": "常来常往",
-      "desc": "一共开过 10 个会话",
-      "metric": "sessionsTotal",
-      "gte": 10,
-      "en": {
-        "name": "Regular",
-        "desc": "Open 10 sessions in total"
-      }
+      "id": "streak-100", "name": "百日之约", "desc": "连续 100 天都来聊天",
+      "metric": "streak", "gte": 100, "series": "day",
+      "en": { "name": "A hundred days", "desc": "Come back 100 days in a row" }
     },
     {
-      "id": "streak-3",
-      "name": "三天不断",
-      "desc": "连续 3 天都来聊天",
-      "metric": "streak",
-      "gte": 3,
-      "en": {
-        "name": "Three in a row",
-        "desc": "Come to chat 3 days in a row"
-      }
+      "id": "night-owl", "name": "夜猫子", "desc": "深夜（23 点到 5 点）聊过 10 轮",
+      "metric": "nightTurns", "gte": 10, "series": "day",
+      "en": { "name": "Night owl", "desc": "Chat 10 turns between 11pm and 5am" }
     },
     {
-      "id": "streak-7",
-      "name": "七日之约",
-      "desc": "连续 7 天都来聊天",
-      "metric": "streak",
-      "gte": 7,
-      "en": {
-        "name": "A week's promise",
-        "desc": "Come to chat 7 days in a row"
-      }
+      "id": "night-50", "name": "深夜食堂", "desc": "深夜（23 点到 5 点）聊过 50 轮",
+      "metric": "nightTurns", "gte": 50, "series": "day",
+      "en": { "name": "After hours", "desc": "Chat 50 turns between 11pm and 5am" }
+    },
+
+    {
+      "id": "meet-3", "name": "见多识广", "desc": "和 3 个不同的角色聊过天",
+      "metric": "rolesMet", "gte": 3, "series": "meet",
+      "en": { "name": "Well acquainted", "desc": "Chat with 3 different roles" }
     },
     {
-      "id": "streak-30",
-      "name": "月月相伴",
-      "desc": "连续 30 天都来聊天",
-      "metric": "streak",
-      "gte": 30,
-      "en": {
-        "name": "Month by month",
-        "desc": "Come to chat 30 days in a row"
-      }
+      "id": "meet-all", "name": "全员集合", "desc": "和 5 个不同的角色聊过天",
+      "metric": "rolesMet", "gte": 5, "series": "meet",
+      "en": { "name": "Everyone is here", "desc": "Chat with 5 different roles" }
     },
     {
-      "id": "night-owl",
-      "name": "夜猫子",
-      "desc": "深夜（23 点到 5 点）聊过 10 轮",
-      "metric": "nightTurns",
-      "gte": 10,
-      "en": {
-        "name": "Night owl",
-        "desc": "Chat 10 turns late at night (23:00 to 05:00)"
-      }
+      "id": "sessions-10", "name": "常来常往", "desc": "一共开过 10 个会话",
+      "metric": "sessionsTotal", "gte": 10, "series": "meet",
+      "en": { "name": "Regular", "desc": "Open 10 sessions in total" }
     },
     {
-      "id": "rebirth-1",
-      "name": "初次转生",
-      "desc": "第一次转生到新会话",
-      "metric": "rebirthsTotal",
-      "gte": 1,
-      "en": {
-        "name": "First rebirth",
-        "desc": "Be reborn into a new session for the first time"
-      }
+      "id": "sessions-50", "name": "老地方", "desc": "一共开过 50 个会话",
+      "metric": "sessionsTotal", "gte": 50, "series": "meet",
+      "en": { "name": "The usual place", "desc": "Open 50 sessions in total" }
     },
     {
-      "id": "rebirth-3",
-      "name": "三世情缘",
-      "desc": "转生三次",
-      "metric": "rebirthsTotal",
-      "gte": 3,
-      "en": {
-        "name": "Three lives",
-        "desc": "Be reborn three times"
-      }
+      "id": "tracks-3", "name": "多重身份", "desc": "试过三种不同的关系（朋友、搭档、亲人、恋人）",
+      "metric": "tracksTried", "gte": 3, "series": "meet",
+      "en": { "name": "Many faces", "desc": "Try 3 different kinds of bond (friends, partners, family, lovers)" }
+    },
+
+    {
+      "id": "sticker-20", "name": "表情达人", "desc": "一共收到 20 张表情包",
+      "metric": "stickersTotal", "gte": 20, "series": "bond",
+      "en": { "name": "Sticker fan", "desc": "Collect 20 stickers" }
     },
     {
-      "id": "sticker-20",
-      "name": "表情达人",
-      "desc": "一共收到 20 张表情包",
-      "metric": "stickersTotal",
-      "gte": 20,
-      "en": {
-        "name": "Sticker fan",
-        "desc": "Receive 20 stickers in total"
-      }
+      "id": "sticker-100", "name": "表情富翁", "desc": "一共收到 100 张表情包",
+      "metric": "stickersTotal", "gte": 100, "series": "bond",
+      "en": { "name": "Sticker tycoon", "desc": "Collect 100 stickers" }
     },
     {
-      "id": "tasks-5",
-      "name": "小有成就",
-      "desc": "一起完成 5 件事（用到工具的回合）",
-      "metric": "tasksTotal",
-      "gte": 5,
-      "en": {
-        "name": "Getting things done",
-        "desc": "Finish 5 things together (turns that used tools)"
-      }
+      "id": "rebirth-1", "name": "初次转生", "desc": "第一次转生到新会话",
+      "metric": "rebirthsTotal", "gte": 1, "series": "bond",
+      "en": { "name": "First rebirth", "desc": "Be reborn into a new session for the first time" }
     },
     {
-      "id": "tasks-50",
-      "name": "得力伙伴",
-      "desc": "一起完成 50 件事",
-      "metric": "tasksTotal",
-      "gte": 50,
-      "en": {
-        "name": "A real helper",
-        "desc": "Finish 50 things together"
-      }
+      "id": "rebirth-3", "name": "三世情缘", "desc": "转生三次",
+      "metric": "rebirthsTotal", "gte": 3, "series": "bond",
+      "en": { "name": "Three lives", "desc": "Be reborn three times" }
     },
     {
-      "id": "tools-100",
-      "name": "趁手工具",
-      "desc": "一起用过 100 次工具",
-      "metric": "toolCalls",
-      "gte": 100,
-      "en": {
-        "name": "Handy tools",
-        "desc": "Use tools together 100 times"
-      }
+      "id": "rebirth-10", "name": "十世同堂", "desc": "转生十次",
+      "metric": "rebirthsTotal", "gte": 10, "series": "bond",
+      "en": { "name": "Ten lives over", "desc": "Be reborn ten times" }
     },
     {
-      "id": "levels-all",
-      "name": "百变风味",
-      "desc": "五档说话强度都用过",
-      "metric": "levelsUsed",
-      "gte": 5,
-      "en": {
-        "name": "Every flavour",
-        "desc": "Try all five intensity levels"
-      }
+      "id": "ghost-10", "name": "心有灵犀", "desc": "采纳过 10 次输入框里的灰字建议",
+      "metric": "ghostAccepts", "gte": 10, "series": "bond",
+      "en": { "name": "In tune", "desc": "Take 10 suggestions from the grey text in the box" }
+    },
+
+    {
+      "id": "tasks-5", "name": "小有成就", "desc": "一起完成 5 件事（用到工具的回合）",
+      "metric": "tasksTotal", "gte": 5, "series": "work",
+      "en": { "name": "Getting things done", "desc": "Get 5 things done together (turns that used tools)" }
     },
     {
-      "id": "tracks-3",
-      "name": "多重身份",
-      "desc": "试过三种不同的关系（朋友、搭档、亲人、恋人）",
-      "metric": "tracksTried",
-      "gte": 3,
-      "en": {
-        "name": "Many parts to play",
-        "desc": "Try three kinds of relationship (friend, partner, family, lover)"
-      }
+      "id": "tasks-50", "name": "得力伙伴", "desc": "一起完成 50 件事",
+      "metric": "tasksTotal", "gte": 50, "series": "work",
+      "en": { "name": "A real helper", "desc": "Get 50 things done together" }
     },
     {
-      "id": "tailor",
-      "name": "量身定制",
-      "desc": "自己换过一次头像或头像设置",
-      "metric": "avatarEdits",
-      "gte": 1,
-      "en": {
-        "name": "Made for me",
-        "desc": "Change a picture or an avatar setting yourself"
-      }
+      "id": "tasks-200", "name": "老搭档", "desc": "一起完成 200 件事",
+      "metric": "tasksTotal", "gte": 200, "series": "work",
+      "en": { "name": "Old hands", "desc": "Get 200 things done together" }
     },
     {
-      "id": "ghost-10",
-      "name": "心有灵犀",
-      "desc": "采纳过 10 次输入框里的灰字建议",
-      "metric": "ghostAccepts",
-      "gte": 10,
-      "en": {
-        "name": "Mind reader",
-        "desc": "Take the grey suggestion 10 times"
-      }
+      "id": "tools-1", "name": "初次动手", "desc": "第一次用到工具",
+      "metric": "toolCalls", "gte": 1, "series": "work",
+      "en": { "name": "First hands-on", "desc": "Use a tool for the first time" }
+    },
+    {
+      "id": "tools-100", "name": "趁手工具", "desc": "一起用过 100 次工具",
+      "metric": "toolCalls", "gte": 100, "series": "work",
+      "en": { "name": "Well-worn tools", "desc": "Use tools 100 times together" }
+    },
+    {
+      "id": "levels-all", "name": "百变风味", "desc": "五档说话强度都用过",
+      "metric": "levelsUsed", "gte": 5, "series": "work",
+      "en": { "name": "All the flavours", "desc": "Try all five intensity levels" }
+    },
+    {
+      "id": "tailor", "name": "量身定制", "desc": "自己换过一次头像或头像设置",
+      "metric": "avatarEdits", "gte": 1, "series": "work",
+      "en": { "name": "Made to measure", "desc": "Change a picture or a picture setting yourself" }
+    },
+
+    {
+      "id": "secret-night", "name": "凌晨三点", "desc": "深夜（23 点到 5 点）聊过 100 轮",
+      "metric": "nightTurns", "gte": 100, "series": "secret", "hidden": true,
+      "en": { "name": "Three in the morning", "desc": "Chat 100 turns between 11pm and 5am" }
+    },
+    {
+      "id": "secret-streak", "name": "不断更", "desc": "连续 60 天都来聊天",
+      "metric": "streak", "gte": 60, "series": "secret", "hidden": true,
+      "en": { "name": "No missed days", "desc": "Come back 60 days in a row" }
+    },
+    {
+      "id": "secret-rebirth", "name": "第 N 次初见", "desc": "转生二十五次",
+      "metric": "rebirthsTotal", "gte": 25, "series": "secret", "hidden": true,
+      "en": { "name": "Another first meeting", "desc": "Be reborn 25 times" }
+    },
+    {
+      "id": "secret-tools", "name": "工具的另一头", "desc": "一起用过 500 次工具",
+      "metric": "toolCalls", "gte": 500, "series": "secret", "hidden": true,
+      "en": { "name": "The other end", "desc": "Use tools 500 times together" }
     }
   ],
+
   "role": [
     {
-      "id": "r-turns-30",
-      "name": "渐入佳境",
-      "desc": "和她聊满 30 轮",
-      "metric": "turns",
-      "gte": 30,
-      "en": {
-        "name": "Warming up",
-        "desc": "Chat 30 turns with her"
-      }
+      "id": "r-turns-30", "name": "渐入佳境", "desc": "和她聊满 30 轮",
+      "metric": "turns", "gte": 30, "series": "role",
+      "en": { "name": "Warming up", "desc": "Chat 30 turns with her" }
     },
     {
-      "id": "r-turns-200",
-      "name": "老朋友",
-      "desc": "和她聊满 200 轮",
-      "metric": "turns",
-      "gte": 200,
-      "en": {
-        "name": "Old friends",
-        "desc": "Chat 200 turns with her"
-      }
+      "id": "r-turns-200", "name": "老朋友", "desc": "和她聊满 200 轮",
+      "metric": "turns", "gte": 200, "series": "role",
+      "en": { "name": "Old friend", "desc": "Chat 200 turns with her" }
     },
     {
-      "id": "r-title-2",
-      "name": "越走越近",
-      "desc": "关系升到第三个称号",
-      "metric": "titleIndexMax",
-      "gte": 2,
-      "en": {
-        "name": "Growing closer",
-        "desc": "Reach the third title with her"
-      }
+      "id": "r-title-2", "name": "越走越近", "desc": "关系升到第三个称号",
+      "metric": "titleIndexMax", "gte": 2, "series": "role",
+      "en": { "name": "Closer still", "desc": "Reach the third title with her" }
     },
     {
-      "id": "r-title-4",
-      "name": "情谊深厚",
-      "desc": "关系升到最高称号",
-      "metric": "titleIndexMax",
-      "gte": 4,
-      "en": {
-        "name": "A deep bond",
-        "desc": "Reach the highest title with her"
-      }
+      "id": "r-title-4", "name": "情谊深厚", "desc": "关系升到最高称号",
+      "metric": "titleIndexMax", "gte": 4, "series": "role",
+      "en": { "name": "Deep bond", "desc": "Reach the highest title with her" }
     },
     {
-      "id": "r-sessions-5",
-      "name": "常客",
-      "desc": "和她聊过 5 个会话",
-      "metric": "sessions",
-      "gte": 5,
-      "en": {
-        "name": "Regular visitor",
-        "desc": "Chat in 5 sessions with her"
-      }
+      "id": "r-sessions-5", "name": "常客", "desc": "和她聊过 5 个会话",
+      "metric": "sessions", "gte": 5, "series": "role",
+      "en": { "name": "Regular visitor", "desc": "Chat with her in 5 sessions" }
     },
     {
-      "id": "r-rebirth-1",
-      "name": "她的第一世",
-      "desc": "和她转生一次",
-      "metric": "rebirths",
-      "gte": 1,
-      "en": {
-        "name": "Her first life",
-        "desc": "Be reborn once with her"
-      }
+      "id": "r-rebirth-1", "name": "她的第一世", "desc": "和她转生一次",
+      "metric": "rebirths", "gte": 1, "series": "role",
+      "en": { "name": "Her first life", "desc": "Be reborn with her once" }
     },
     {
-      "id": "r-tasks-10",
-      "name": "并肩作战",
-      "desc": "和她一起完成 10 件事",
-      "metric": "tasks",
-      "gte": 10,
-      "en": {
-        "name": "Side by side",
-        "desc": "Finish 10 things together with her"
-      }
+      "id": "r-tasks-10", "name": "并肩作战", "desc": "和她一起完成 10 件事",
+      "metric": "tasks", "gte": 10, "series": "role",
+      "en": { "name": "Side by side", "desc": "Get 10 things done with her" }
     },
     {
-      "id": "r-tracks-2",
-      "name": "多面",
-      "desc": "和她试过两种不同的关系",
-      "metric": "trackKinds",
-      "gte": 2,
-      "en": {
-        "name": "Many sides",
-        "desc": "Try two kinds of relationship with her"
-      }
+      "id": "r-tracks-2", "name": "多面", "desc": "和她试过两种不同的关系",
+      "metric": "trackKinds", "gte": 2, "series": "role",
+      "en": { "name": "Two sides", "desc": "Try two kinds of bond with her" }
     }
   ]
 }

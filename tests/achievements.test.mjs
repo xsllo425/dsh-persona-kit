@@ -31,6 +31,47 @@ test('the shipped defaults are all valid and have unique ids', () => {
   const defs = A.collectDefs(raw)
   assert.equal(defs.length, raw.global.length + raw.role.length)
   assert.equal(new Set(defs.map((d) => d.scope + d.id)).size, defs.length)
+  assert.equal(defs.length, 40) // the catalog size the panel and the tests agree on
+  assert.ok(defs.filter((d) => d.hidden).length > 0)
+})
+
+test('series: a known one is kept, anything else falls back by scope', () => {
+  assert.equal(A.normalizeDef({ id: 'a', name: 'n', metric: 'turnsTotal', gte: 1, series: 'day' }, 'global').series, 'day')
+  assert.equal(A.normalizeDef({ id: 'a', name: 'n', metric: 'turnsTotal', gte: 1, series: 'nope' }, 'global').series, 'misc')
+  assert.equal(A.normalizeDef({ id: 'a', name: 'n', metric: 'turnsTotal', gte: 1 }, 'global').series, 'misc')
+  assert.equal(A.normalizeDef({ id: 'a', name: 'n', metric: 'turns', gte: 1 }, 'role').series, 'role')
+  assert.equal(A.normalizeDef({ id: 'a', name: 'n', metric: 'turns', gte: 1, series: 'chat' }, 'role').series, 'chat')
+})
+
+test('hidden is opt-in, and never leaks into the value counting', () => {
+  assert.equal(A.normalizeDef({ id: 'h', name: 'n', metric: 'turnsTotal', gte: 1, hidden: true }, 'global').hidden, true)
+  assert.equal(A.normalizeDef({ id: 'h', name: 'n', metric: 'turnsTotal', gte: 1 }, 'global').hidden, false)
+  assert.equal(A.normalizeDef({ id: 'h', name: 'n', metric: 'turnsTotal', gte: 1, hidden: 'yes' }, 'global').hidden, false)
+})
+
+test('the current streak is the run still alive today, not the longest one', () => {
+  const d = ['2026-10-01', '2026-10-02', '2026-10-10']
+  assert.equal(A.currentStreak(d, '2026-10-10'), 1) // came back today: a new run of one
+  assert.equal(A.currentStreak(d, '2026-10-11'), 1) // yesterday still counts until today is missed
+  assert.equal(A.currentStreak(d, '2026-10-12'), 0) // a whole day missed
+  assert.equal(A.currentStreak(['2026-10-10', '2026-10-11'], '2026-10-11'), 2)
+  assert.equal(A.currentStreak([], '2026-10-11'), 0)
+  assert.equal(A.currentStreak(['2026-10-10'], ''), 0)
+  assert.equal(A.currentStreak(['2026-10-10'], 'not-a-day'), 0)
+})
+
+test('groups keep the panel order, drop empty ones, and count what was earned', () => {
+  const defs = A.collectDefs({ global: [
+    { id: 'b', name: 'B', metric: 'turnsTotal', gte: 1, series: 'day' },
+    { id: 'a', name: 'A', metric: 'turnsTotal', gte: 1, series: 'chat' },
+    { id: 'c', name: 'C', metric: 'turnsTotal', gte: 1, series: 'day' },
+  ] })
+  const groups = A.groupDefs(defs)
+  assert.deepEqual(groups.map((g) => g.id), ['chat', 'day'])
+  assert.deepEqual(groups[1].defs.map((d) => d.id), ['b', 'c'])
+  const stats = A.groupStats(defs, (d) => d.id === 'b')
+  assert.deepEqual(stats.map((s) => `${s.id}:${s.got}/${s.total}`), ['chat:0/1', 'day:1/2'])
+  assert.equal(typeof stats[0].name, 'string')
 })
 
 test('streak counts consecutive local days only', () => {

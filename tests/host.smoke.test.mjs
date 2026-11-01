@@ -12,7 +12,7 @@ writeFileSync(join(home, 'roles', 'alice', 'ROLE.md'), '---\nid: alice\nname: Al
 writeFileSync(join(home, 'roles', 'alice', 'card.json'), JSON.stringify({ packs: [] }))
 mkdirSync(join(home, 'persona-kit'), { recursive: true })
 writeFileSync(join(home, 'persona-kit', 'config.json'), JSON.stringify({ roles: { enabled: true, defaultRole: 'alice' } }))
-test.after(() => rmSync(home, { recursive: true, force: true }))
+test.after(() => { try { rmSync(home, { recursive: true, force: true }) } catch { /* a stray handle on Windows: the folder is throw-away */ } })
 
 const mod = await import('../lib/index.js')
 
@@ -38,7 +38,10 @@ const call = async (route, { url, method = 'GET', headers = {}, body }) => {
   const req = Object.assign((async function* () { if (body) yield Buffer.from(JSON.stringify(body)) })(), { url, method, headers: { host: '127.0.0.1:1234', ...headers }, socket: { remoteAddress: '127.0.0.1' } })
   const res = { writeHead: (s) => { status = s }, end: (t) => { out = t || '' } }
   await route.handler(req, res)
-  return { status, json: out ? JSON.parse(out) : null }
+  // a route may answer with a picture or a zip; only JSON answers are parsed
+  let json = null
+  try { json = out ? JSON.parse(String(out)) : null } catch { json = null }
+  return { status, json, raw: out }
 }
 
 test('the plugin asks the host for the services it uses (a missing one silently drops a feature)', () => {
@@ -106,7 +109,106 @@ test('a brand-new, empty DSH home starts cleanly and answers sensibly', async ()
     assert.equal(s.status, 200)
     assert.equal(s.json.roleId, '') // no role, no crash
     assert.equal((await call(route, { url: '/persona-kit/stats' })).json.roles.length, 0)
-    assert.equal((await call(route, { url: '/persona-kit/achievements?role=' })).json.ok, true)
+    const ach = (await call(route, { url: '/persona-kit/achievements?role=' })).json
+    assert.equal(ach.ok, true)
+    assert.equal(ach.total, 32) // the 32 global badges: the 8 role ones need a role selected
+    assert.deepEqual(ach.series.map((s) => s.id), ['chat', 'day', 'meet', 'bond', 'work', 'secret'])
+    assert.equal(ach.summary.total, 32)
+    assert.equal(ach.summary.days, 0)
+    const secret = ach.list.find((x) => x.id === 'secret-night')
+    assert.equal(secret.hidden, true)
+    assert.equal(secret.desc, '') // masked on the server, not in the panel
+    assert.equal(secret.gte, 0)
+    assert.equal(secret.value, 0)
     assert.equal((await call(route, { url: '/persona-kit/avatar-settings' })).json.settings.account, false)
   } finally { process.env.DSH_HOME = keep; rmSync(empty, { recursive: true, force: true }) }
+})
+
+test('GET /sessions lists every session that has a role: the pill draws a switch before /session answers', async () => {
+  const dir = join(home, 'persona-switcher')
+  mkdirSync(dir, { recursive: true })
+  writeFileSync(join(dir, 'sessions.json'), JSON.stringify({ sessions: {
+    'session-real': { role: 'alice' }, // tool-gate-era key shape
+    plain: { role: 'alice' },
+    none: { role: null }, // "no persona" is not a role, so there is nothing to draw
+  } }))
+  const h = fakeHost()
+  mod.apply(h.ctx)
+  const route = h.routes.find((r) => r.path === '/persona-kit')
+  const got = await call(route, { url: '/persona-kit/sessions' })
+  assert.equal(got.status, 200)
+  assert.deepEqual(Object.keys(got.json.sessions).sort(), ['plain', 'real'])
+  const a = got.json.sessions.real
+  assert.equal(a.role, 'alice')
+  assert.equal(a.level, 3)
+  assert.ok(a.accent.startsWith('#'))
+  // the map must say exactly what /session will say, or the pill would still change after the switch lands
+  const s = await call(route, { url: '/persona-kit/session?session=session-real' })
+  assert.equal(a.name, s.json.name) // 'Alice', read from ROLE.md
+  assert.equal(a.levelName, s.json.levels[s.json.level - 1].name)
+  assert.equal((await call(route, { url: '/persona-kit/sessions', headers: { origin: 'https://evil.example' } })).status, 403)
+})
+
+test('the meme routes are mounted under /persona-kit and serve a pack picture only when the index lists it', async () => {
+  // give this home one pack to serve; the fixture above has none
+  const { DatabaseSync } = await import('node:sqlite')
+  const packDir = join(home, 'meme-packs', 'alice-pack', 'memes', 'happy')
+  mkdirSync(packDir, { recursive: true })
+  writeFileSync(join(packDir, '1.png'), 'png-bytes')
+  const db = new DatabaseSync(join(home, 'meme-packs', 'alice-pack', 'index.db'))
+  db.exec('CREATE TABLE memes (path TEXT PRIMARY KEY, tag TEXT, file_name TEXT, caption TEXT, keywords TEXT, mtime REAL, captioned_at REAL)')
+  db.prepare('INSERT INTO memes VALUES (?,?,?,?,?,?,?)').run('memes/happy/1.png', 'happy', '1.png', '开心', '开心', 0, 0)
+  db.close()
+
+  const h = fakeHost()
+  mod.apply(h.ctx)
+  const route = h.routes.find((r) => r.path === '/persona-kit')
+
+  // the management api answers a local caller
+  const api = await call(route, { url: '/persona-kit/memes-api?packId=all' })
+  assert.equal(api.status, 200)
+  assert.equal(api.json.ok, true)
+  assert.deepEqual(api.json.packs.map((p) => p.id), ['alice-pack'])
+
+  // a picture the index lists comes back; anything else is 404
+  assert.equal((await call(route, { url: '/persona-kit/memes/alice-pack/memes/happy/1.png' })).status, 200)
+  assert.equal((await call(route, { url: '/persona-kit/memes/alice-pack/memes/happy/2.png' })).status, 404)
+  assert.equal((await call(route, { url: '/persona-kit/memes/alice-pack/../../index.db' })).status, 404)
+  assert.equal((await call(route, { url: '/persona-kit/memes/nope/memes/happy/1.png' })).status, 404)
+
+  // the export refuses to build the whole library at once, and takes one pack on request
+  const all = await call(route, { url: '/persona-kit/memes-export' })
+  assert.equal(all.status, 400)
+  const one = await call(route, { url: '/persona-kit/memes-export?packId=alice-pack' })
+  assert.equal(one.status, 200)
+
+  // and every meme route is local-only, like the rest
+  assert.equal((await call(route, { url: '/persona-kit/memes-api?packId=all', headers: { origin: 'https://evil.example' } })).status, 403)
+  assert.equal((await call(route, { url: '/persona-kit/memes/alice-pack/memes/happy/1.png', headers: { host: 'evil.example' } })).status, 403)
+})
+
+test('the meme routes are mounted once, under this plugin\'s own prefix only', () => {
+  const h = fakeHost()
+  mod.apply(h.ctx)
+  // While the old plugin is installed it keeps serving /dsh-memes*; this plugin must not put a second handler
+  // on those paths, because which one wins was never established.
+  for (const p of ['/dsh-memes', '/dsh-memes-api', '/dsh-memes-export']) {
+    assert.ok(!h.routes.some((r) => r.path === p), `${p} must not be mounted by this plugin`)
+  }
+  // everything this plugin serves lives under its own prefixes; the tool gate adds /persona-kit-gate
+  assert.deepEqual(h.routes.map((r) => r.path).sort(), ['/persona-kit', '/persona-kit-gate'])
+  assert.ok(!h.routes.some((r) => r.path.startsWith('/dsh-memes') || r.path === '/memes-panel'))
+})
+
+test('send_sticker offers packId and preview, and preview never reaches queue', () => {
+  const h = fakeHost()
+  const registered = []
+  h.ctx.tools.register = (t) => { registered.push(t); return () => {} }
+  mod.apply(h.ctx)
+  const tool = registered.find((t) => t.name === 'send_sticker')
+  assert.ok(tool, 'send_sticker is registered')
+  assert.ok(tool.parameters.properties.packId, 'packId is offered')
+  assert.ok(tool.parameters.properties.preview, 'preview is offered')
+  // the output schema must allow the candidate list, or the host would drop it
+  assert.ok(tool.output.schema.properties.memes, 'the output schema carries the candidates')
 })

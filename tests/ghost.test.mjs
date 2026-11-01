@@ -1,5 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 import * as G from '../lib/ghost.js'
 
 const u = (seq, text, kind) => ({ type: 'user/message', seq, data: { role: 'user', content: [{ type: 'text', text }], ...(kind ? { source: { kind } } : {}) } })
@@ -99,4 +100,59 @@ test('the prompt asks for a literary line, forbids labels and errands, and follo
   assert.match(mk('daughter', 1), /用户是她的长辈/)
   assert.match(mk('elder', 1), /用户是她的弟弟或妹妹/)
   assert.match(G.buildSystem('affinity', { stage: 99, track: 'nope' }), /熟悉程度/) // unknown input never breaks it
+})
+
+// ---- when the grey suggestion may be drawn (lib/ghost.js:ghostVisible) ----
+// These pin the two regressions the user reported: a suggestion painted over characters the host's draft
+// snapshot had not caught up with yet.
+
+const base = { mode: 'normal', text: '要不要继续？', draft: '', dismissed: false, running: false, locked: false, removed: false, typed: false, composing: false }
+
+test('the suggestion shows when the box is empty and the mode is on', () => {
+  assert.equal(G.ghostVisible(base), true)
+  assert.equal(G.ghostVisible({ ...base, mode: 'affinity' }), true)
+})
+
+test('a suggestion is never drawn over text the user has already typed', () => {
+  // the host's draft said "" but the DOM has characters: this is the overlap bug
+  assert.equal(G.ghostVisible({ ...base, draft: '', typed: true }), false)
+  assert.equal(G.ghostVisible({ ...base, draft: '你好', typed: true }), false)
+  assert.equal(G.ghostVisible({ ...base, draft: '你好' }), false)
+})
+
+test('a suggestion is never drawn while an IME is composing', () => {
+  // composing can happen with an empty draft and (briefly) nothing in the box yet
+  assert.equal(G.ghostVisible({ ...base, composing: true }), false)
+  assert.equal(G.ghostVisible({ ...base, composing: true, draft: '', typed: false }), false)
+})
+
+test('nothing to suggest, mode off, or the turn still running all mean no suggestion', () => {
+  assert.equal(G.ghostVisible({ ...base, mode: 'off' }), false)
+  assert.equal(G.ghostVisible({ ...base, mode: undefined }), false)
+  assert.equal(G.ghostVisible({ ...base, text: '' }), false)
+  assert.equal(G.ghostVisible({ ...base, text: undefined }), false)
+  assert.equal(G.ghostVisible({ ...base, running: true }), false)
+  assert.equal(G.ghostVisible({ ...base, locked: true }), false)
+  assert.equal(G.ghostVisible({ ...base, removed: true }), false)
+  assert.equal(G.ghostVisible({ ...base, dismissed: true }), false)
+  assert.equal(G.ghostVisible(null), false)
+})
+
+// The client bundle is a standalone factory with no imports, so the rule exists twice: lib/ghost.js (tested
+// above) and a copy inside lib/client.js. This keeps the two from drifting apart by running the client's own
+// source against the same table of cases.
+test('the client copy of the rule answers exactly like lib/ghost.js', () => {
+  const src = readFileSync(new URL('../lib/client.js', import.meta.url), 'utf8')
+  const m = /function ghostShowable\(s\) \{([\s\S]*?)\n\t\t\}/.exec(src)
+  assert.ok(m, 'ghostShowable is still defined in lib/client.js')
+  const clientRule = new Function('s', m[1])
+  const flags = [true, false]
+  for (const mode of ['off', 'normal', 'affinity', undefined])
+    for (const text of ['一句建议', '', undefined])
+      for (const draft of ['', '打得字'])
+        for (const dismissed of flags) for (const running of flags) for (const locked of flags)
+          for (const removed of flags) for (const typed of flags) for (const composing of flags) {
+            const state = { mode, text, draft, dismissed, running, locked, removed, typed, composing }
+            assert.equal(clientRule(state), G.ghostVisible(state), JSON.stringify(state))
+          }
 })

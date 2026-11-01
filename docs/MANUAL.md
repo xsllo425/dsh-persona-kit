@@ -13,7 +13,7 @@
 | **Stickers** | Each role has its own sticker packs (`~/.dsh/meme-packs/<id>`). Picked by tone, with a cadence set by the level; the model can also call `send_sticker`. Stickers are identified by file, never by description, so packs cannot get mixed up. |
 | **Relationship** | Per role, per kind of bond: **friend, partner, family (she is your daughter / younger sister / elder sister / mother), lover**. Each keeps its own history, titles and way of growing. Family bonds are strictly familial; the lover bond is gentle, non-explicit and assumes nobody's gender. The model only ever sees a title, never numbers. |
 | **Rebirth** | When the context is nearly full, the role offers to continue in a fresh session; affinity, titles and the role carry over. Replaces `dsh-handoff`. |
-| **Achievements** | Milestones for chatting and getting things done together. Plain data (`defaults/achievements.json`) plus per-role achievements in the role card, including phrases she says. Counted by the plugin from real events — the model cannot announce an unlock. |
+| **Achievements** | 40 milestones for chatting and getting things done together, grouped into seven series (chat, days, meetings, bond, working together, role, secrets). Plain data (`defaults/achievements.json`; a definition may name its `series` and be `hidden`) plus per-role achievements in the role card, including phrases she says. The panel is a seal wall with a stats header (badges, days, current streak, best streak, turns), per-series counts and a details line; a **hidden** badge's description, threshold and progress are withheld by the server until it is earned. Counted by the plugin from real events — the model cannot announce an unlock. |
 | **Avatars** | A picture and name above (or beside) each reply, with her relationship or affinity under the name; your own picture on your side. Size, position and what is shown are all editable; click an avatar to open the panel. Optionally replaces the name and picture on the sidebar's account button. |
 | **Grey suggestions** | An optional grey "what you might say next" in the input box (Tab / → to take it, Esc to drop it, ↑ / ↓ for your sent history). Two modes: *normal* predicts your next message; *affinity* writes a literary line that would bring you closer, in the voice that suits the relationship. Off by default — it costs one short model call per reply. |
 | **Tool gate** | Optional: heavy tool groups start hidden and come back for one session when asked for, then go away again when idle. Does nothing until you configure groups. |
@@ -69,7 +69,7 @@ affinity, achievements — pruned of sessions older than 90 days), `avatars/` an
   "packs": ["example-faces"],                       // sticker packs this role uses (and only these)
   "titles": ["…", "…", "…", "…", "…"],              // optional: five friend-stage titles
   "levels": [ { "name": "Plain", "line": "…" }, … ],// five of them; missing ones fall back to the defaults
-  "achievements": [ { "id": "…", "name": "…", "metric": "phrase", "gte": 3, "pattern": "regex" } ]
+  "achievements": [ { "id": "…", "name": "…", "metric": "phrase", "gte": 3, "pattern": "regex", "series": "role" } ]
 }
 ```
 
