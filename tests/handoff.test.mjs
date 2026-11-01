@@ -102,11 +102,34 @@ test('with neither a meter nor a projection it warns once instead of failing sil
   rmSync(dir, { recursive: true, force: true })
 })
 
-test('without a token meter the session projection still fires the notice', async () => {
+test('without any projection the lifetime totals still fire the notice', async () => {
   const projection = { tokenUsage: { totals: { uncachedInputTokens: 300_000, cacheReadTokens: 90_000, outputTokens: 20_000 } } }
   const { dir, measure } = setup({ meter: false, projection })
-  // 410k of lifetime tokens: over the first threshold (400k) even though no meter service exists
+  // last-resort path: 410k of tokens, over the first threshold (400k), no meter and no context pressure
   assert.equal((await measure('s3')).messages.length, 1)
+  rmSync(dir, { recursive: true, force: true })
+})
+
+test('a near-empty context stays quiet even when the lifetime totals are huge', async () => {
+  // a long session accumulates hundreds of millions of lifetime tokens while its context sits far below the line
+  const projection = {
+    contextPressure: { pressureTokens: 172_388, contextWindow: 1_048_576 },
+    tokenUsage: { totals: { uncachedInputTokens: 14_762_838, cacheReadTokens: 175_049_472, outputTokens: 315_857 } },
+  }
+  const { dir, measure } = setup({ meter: false, projection })
+  assert.equal((await measure('s3')).messages.length, 0)
+  rmSync(dir, { recursive: true, force: true })
+})
+
+test('a full context fires on the context pressure number, not on the lifetime totals', async () => {
+  const projection = {
+    contextPressure: { pressureTokens: 420_000, contextWindow: 1_048_576 },
+    tokenUsage: { totals: { uncachedInputTokens: 1_000, cacheReadTokens: 1_000, outputTokens: 1_000 } },
+  }
+  const { dir, measure, logs } = setup({ meter: false, projection })
+  assert.equal((await measure('s3')).messages.length, 1)
+  const info = logs.filter(([level]) => level === 'info').map(([, msg]) => msg).join('\n')
+  assert.match(info, /measured via contextPressure/)
   rmSync(dir, { recursive: true, force: true })
 })
 
