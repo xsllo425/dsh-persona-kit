@@ -52,7 +52,8 @@ Then enable the role switcher in `~/.dsh/persona-kit/config.json` (see below), r
               "timeoutMs": 20000 },
   "language": "zh",                    // "zh" (default) | "en" | "auto" (follow the machine's locale)  (menus, titles, achievements and the text sent to the model)
   "countSessions": "^session-",        // which session ids are chats with you (workers and automations never raise affinity)
-  "triggerTokens": 300000,             // context size at which a rebirth is offered
+  "triggerTokens": 400000,             // context size at which a rebirth is first offered
+  "secondTriggerTokens": 500000,       // a firmer second notice if the first one was ignored (never below triggerTokens)
   "rolesDir": "", "packsDir": "", "roleSessionsFile": ""   // override the default locations
 }
 ```

@@ -26,11 +26,13 @@ test('progress to the next title, and the top title is full', () => {
 })
 
 test('heat is context fill, capped; rebirth is due at the trigger', () => {
-  assert.equal(bond.heatOf(150_000), 50)
+  assert.equal(bond.heatOf(200_000), 50)
   assert.equal(bond.heatOf(900_000), 100)
   assert.equal(bond.heatOf('x'), 0)
-  assert.equal(bond.rebirthDue(299_999), false)
-  assert.equal(bond.rebirthDue(300_000), true)
+  assert.equal(bond.rebirthDue(399_999), false)
+  assert.equal(bond.rebirthDue(400_000), true)
+  assert.equal(bond.DEFAULT_TRIGGER_TOKENS, 400_000)
+  assert.equal(bond.DEFAULT_SECOND_TRIGGER_TOKENS, 500_000)
 })
 
 test('normalizeBond ignores junk', () => {

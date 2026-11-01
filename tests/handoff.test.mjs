@@ -1,38 +1,59 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { mkdtempSync, rmSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { installHandoff, TOOL_NAME, notice, noticePlain } from '../lib/handoff.js'
 import { setLang } from '../lib/lang.js'
 
-function setup({ controller } = {}) {
-  const dir = mkdtempSync(join(tmpdir(), 'ho-'))
+function setup(opts = {}) {
+  return setupInto(mkdtempSync(join(tmpdir(), 'ho-')), opts)
+}
+
+/** Install against an existing state directory, so a pre-seeded `asked.json` is read at start-up. */
+function setupInto(dir, { controller, tokens = 400_000, meter = true } = {}) {
   const tools = []
   const handlers = []
   const rebirths = []
-  const services = { sessionController: controller, tokenMeter: { measure: () => ({ totalTokens: 400_000 }) } }
+  const logs = []
+  const state = { tokens }
+  const services = { sessionController: controller }
+  if (meter) services.tokenMeter = { measure: () => ({ totalTokens: state.tokens }) }
+  const logger = {}
+  for (const level of ['info', 'warn', 'error']) logger[level] = (msg) => logs.push([level, msg])
   const ctx = {
-    logger: {},
+    logger,
     get: (k) => services[k],
     on: (name, fn) => handlers.push([name, fn]),
     effect: (fn) => { tools.push(fn()) },
     tools: { register: (t) => t },
   }
   const kit = { roleOf: (sid) => (sid === 'withrole' ? 'alice' : ''), store: { setTokens() {} } }
-  installHandoff(ctx, { kit, triggerTokens: 300_000, dir, onRebirth: (p, c) => rebirths.push([p, c]) })
-  return { dir, tool: tools[0], pre: handlers.find(([n]) => n === 'agent/pre-step')[1], rebirths }
+  installHandoff(ctx, { kit, triggerTokens: 400_000, secondTriggerTokens: 500_000, dir, onRebirth: (p, c) => rebirths.push([p, c]) })
+  const pre = handlers.find(([n]) => n === 'agent/pre-step')[1]
+  // measuring is throttled to every 4th step, so a round of four calls is one measurement window.
+  // The session object must stay the same across calls: the step counter is keyed by it.
+  // Whatever a window decides lands on the step that measured, so return the window's non-empty decision.
+  const sessions = new Map()
+  const measure = async (sid) => {
+    let session = sessions.get(sid)
+    if (session === undefined) { session = { id: sid }; sessions.set(sid, session) }
+    let last = { kind: 'continue', messages: [] }
+    for (let i = 0; i < 4; i++) {
+      const decision = await pre({ agent: { session }, signal: {} }, async () => ({ kind: 'continue', messages: [] }))
+      if (decision.messages.length > 0) last = decision
+    }
+    return last
+  }
+  return { dir, tool: tools[0], pre, measure, rebirths, logs, state }
 }
 
-test('the notice differs for sessions with and without a role, and fires once', async () => {
-  const { dir, pre } = setup()
-  const run = (sid) => pre({ agent: { session: { id: sid } }, signal: {} }, async () => ({ kind: 'continue', messages: [] }))
-  const a = await run('withrole')
+test('the notice differs for sessions with and without a role', async () => {
+  const { dir, measure } = setup()
+  const a = await measure('withrole')
   assert.match(a.messages[0].content[0].text, /转生/)
-  const b = await run('plain')
+  const b = await measure('plain')
   assert.doesNotMatch(b.messages[0].content[0].text, /转生/)
-  const again = await run('withrole')
-  assert.equal(again.messages.length, 0)
   assert.ok(notice().includes(TOOL_NAME) && noticePlain().includes(TOOL_NAME))
   setLang('en')
   assert.match(notice(), /rebirth/i)
@@ -40,6 +61,62 @@ test('the notice differs for sessions with and without a role, and fires once', 
   assert.doesNotMatch(noticePlain(), /rebirth/i)
   setLang('zh')
   rmSync(dir, { recursive: true, force: true })
+})
+
+test('the first notice fires at the trigger and stays quiet below it', async () => {
+  const { dir, measure, state } = setup({ tokens: 399_000 })
+  assert.equal((await measure('s1')).messages.length, 0)
+  state.tokens = 400_000
+  assert.equal((await measure('s1')).messages.length, 1)
+  assert.equal((await measure('s1')).messages.length, 0) // never twice for the same threshold
+  rmSync(dir, { recursive: true, force: true })
+})
+
+test('a second, firmer notice fires at the second threshold and then stops', async () => {
+  const { dir, measure, state } = setup({ tokens: 400_000 })
+  const first = await measure('s2')
+  assert.equal(first.messages.length, 1)
+  assert.match(first.messages[0].content[0].text, /（上下文提醒）/)
+
+  state.tokens = 499_000
+  assert.equal((await measure('s2')).messages.length, 0) // between the two thresholds: nothing
+
+  state.tokens = 500_000
+  const second = await measure('s2')
+  assert.equal(second.messages.length, 1)
+  assert.match(second.messages[0].content[0].text, /第二次/)
+
+  state.tokens = 900_000
+  assert.equal((await measure('s2')).messages.length, 0) // the budget is two, then silence
+  rmSync(dir, { recursive: true, force: true })
+})
+
+test('an unreadable token meter warns once instead of failing silently', async () => {
+  const { dir, measure, logs } = setup({ meter: false })
+  assert.equal((await measure('s3')).messages.length, 0)
+  await measure('s3')
+  const warnings = logs.filter(([level]) => level === 'warn')
+  assert.equal(warnings.length, 1)
+  assert.match(warnings[0][1], /token meter unavailable/)
+  rmSync(dir, { recursive: true, force: true })
+})
+
+test('a notice count file survives a restart and older id lists read as one notice', async () => {
+  const { dir, measure } = setup({ tokens: 400_000 })
+  await measure('s4')
+  const file = join(dir, 'asked.json')
+  assert.deepEqual(JSON.parse(readFileSync(file, 'utf8')), { s4: 1 })
+
+  // an older version wrote a plain array of ids: that must count as one notice already sent.
+  // The file has to be in place before the plugin starts, so write it and then install.
+  const dir2 = mkdtempSync(join(tmpdir(), 'ho-'))
+  writeFileSync(join(dir2, 'asked.json'), JSON.stringify(['s5']), 'utf8')
+  const second = setupInto(dir2, { tokens: 400_000 })
+  assert.equal((await second.measure('s5')).messages.length, 0, 'a legacy entry means the first notice was already sent')
+  second.state.tokens = 500_000
+  assert.equal((await second.measure('s5')).messages.length, 1, 'the second notice can still fire')
+  rmSync(dir, { recursive: true, force: true })
+  rmSync(dir2, { recursive: true, force: true })
 })
 
 test('the tool refuses a thin summary and records a rebirth on success', async () => {
