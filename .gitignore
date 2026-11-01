@@ -10,3 +10,10 @@ tmp/
 *.bak-*
 *.corrupt-*
 docs/waiting-phrases.md
+# working notes: kept on disk for the maintainer, never published
+TODO.md
+AGENTS.md
+.dsh/
+docs/meme-merge-plan.md
+docs/status-line.md
+docs/handoff-meme-merge.md
