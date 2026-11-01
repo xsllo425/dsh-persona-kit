@@ -7,6 +7,7 @@
 - Chinese is now the default language (`"language": "zh"`; `"auto"` still follows the machine).
 - Five ready-made roles in `presets/roles` (`node tools/install-examples.mjs --presets`), with each role's own sticker pack in `presets/meme-packs`.
 - README rewritten as a landing page; the full reference moved to `docs/MANUAL.md`.
+- Folds in `dsh-meme`: the sticker picker, multi-pack library, ZIP import/export, the ops panel and click-to-zoom. `send_meme`, the market, AI learning and IM delivery are intentionally left out.
 
 ## 0.1.0 — first release
 
