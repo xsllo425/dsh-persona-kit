@@ -11,7 +11,7 @@ function setup(opts = {}) {
 }
 
 /** Install against an existing state directory, so a pre-seeded `asked.json` is read at start-up. */
-function setupInto(dir, { controller, tokens = 400_000, meter = true } = {}) {
+function setupInto(dir, { controller, tokens = 400_000, meter = true, projection = null } = {}) {
   const tools = []
   const handlers = []
   const rebirths = []
@@ -19,6 +19,7 @@ function setupInto(dir, { controller, tokens = 400_000, meter = true } = {}) {
   const state = { tokens }
   const services = { sessionController: controller }
   if (meter) services.tokenMeter = { measure: () => ({ totalTokens: state.tokens }) }
+  if (projection) services.sessionProjections = { stateOf: (_session, key) => projection[key] }
   const logger = {}
   for (const level of ['info', 'warn', 'error']) logger[level] = (msg) => logs.push([level, msg])
   const ctx = {
@@ -91,13 +92,21 @@ test('a second, firmer notice fires at the second threshold and then stops', asy
   rmSync(dir, { recursive: true, force: true })
 })
 
-test('an unreadable token meter warns once instead of failing silently', async () => {
+test('with neither a meter nor a projection it warns once instead of failing silently', async () => {
   const { dir, measure, logs } = setup({ meter: false })
   assert.equal((await measure('s3')).messages.length, 0)
   await measure('s3')
   const warnings = logs.filter(([level]) => level === 'warn')
   assert.equal(warnings.length, 1)
-  assert.match(warnings[0][1], /token meter unavailable/)
+  assert.match(warnings[0][1], /cannot measure context tokens/)
+  rmSync(dir, { recursive: true, force: true })
+})
+
+test('without a token meter the session projection still fires the notice', async () => {
+  const projection = { tokenUsage: { totals: { uncachedInputTokens: 300_000, cacheReadTokens: 90_000, outputTokens: 20_000 } } }
+  const { dir, measure } = setup({ meter: false, projection })
+  // 410k of lifetime tokens: over the first threshold (400k) even though no meter service exists
+  assert.equal((await measure('s3')).messages.length, 1)
   rmSync(dir, { recursive: true, force: true })
 })
 
