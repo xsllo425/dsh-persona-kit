@@ -34,15 +34,15 @@ function setupInto(dir, { controller, tokens = 400_000, meter = true, projection
   const kit = { roleOf: (sid) => (sid === 'withrole' ? 'alice' : ''), store: { setTokens() {} } }
   installHandoff(ctx, { kit, triggerTokens: 400_000, secondTriggerTokens: 500_000, triggerPercent, secondPercent, dir, onRebirth: (p, c) => rebirths.push([p, c]) })
   const pre = handlers.find(([n]) => n === 'agent/pre-step')[1]
-  // measuring is throttled to every 4th step, so a round of four calls is one measurement window.
+  // the cadence is adaptive, so a "round" runs enough steps to guarantee at least one measurement.
   // The session object must stay the same across calls: the step counter is keyed by it.
-  // Whatever a window decides lands on the step that measured, so return the window's non-empty decision.
+  // Whatever a round decides lands on the step that measured, so return the round's non-empty decision.
   const sessions = new Map()
   const measure = async (sid) => {
     let session = sessions.get(sid)
     if (session === undefined) { session = { id: sid }; sessions.set(sid, session) }
     let last = { kind: 'continue', messages: [] }
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < 40; i++) {
       const decision = await pre({ agent: { session }, signal: {} }, async () => ({ kind: 'continue', messages: [] }))
       if (decision.messages.length > 0) last = decision
     }
