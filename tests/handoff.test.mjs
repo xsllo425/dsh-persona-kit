@@ -11,7 +11,7 @@ function setup(opts = {}) {
 }
 
 /** Install against an existing state directory, so a pre-seeded `asked.json` is read at start-up. */
-function setupInto(dir, { controller, tokens = 400_000, meter = true, projection = null } = {}) {
+function setupInto(dir, { controller, tokens = 400_000, meter = true, projection = null, triggerPercent, secondPercent } = {}) {
   const tools = []
   const handlers = []
   const rebirths = []
@@ -30,7 +30,7 @@ function setupInto(dir, { controller, tokens = 400_000, meter = true, projection
     tools: { register: (t) => t },
   }
   const kit = { roleOf: (sid) => (sid === 'withrole' ? 'alice' : ''), store: { setTokens() {} } }
-  installHandoff(ctx, { kit, triggerTokens: 400_000, secondTriggerTokens: 500_000, dir, onRebirth: (p, c) => rebirths.push([p, c]) })
+  installHandoff(ctx, { kit, triggerTokens: 400_000, secondTriggerTokens: 500_000, triggerPercent, secondPercent, dir, onRebirth: (p, c) => rebirths.push([p, c]) })
   const pre = handlers.find(([n]) => n === 'agent/pre-step')[1]
   // measuring is throttled to every 4th step, so a round of four calls is one measurement window.
   // The session object must stay the same across calls: the step counter is keyed by it.
@@ -170,3 +170,19 @@ test('a failed session creation records nothing', async () => {
   assert.equal(rebirths.length, 0)
   rmSync(dir, { recursive: true, force: true })
 })
+
+test('percentage thresholds scale with the context window', async () => {
+  const projection = { contextPressure: { pressureTokens: 110_000, contextWindow: 1_048_576 } }
+  const { dir, measure } = setup({ meter: false, projection, triggerPercent: 10, secondPercent: 50 })
+  // 10 % of 1,048,576 ≈ 104,858, so 110k is already over the first line
+  assert.equal((await measure('s3')).messages.length, 1)
+  rmSync(dir, { recursive: true, force: true })
+})
+
+test('percentage thresholds stay quiet below the line', async () => {
+  const projection = { contextPressure: { pressureTokens: 100_000, contextWindow: 1_048_576 } }
+  const { dir, measure } = setup({ meter: false, projection, triggerPercent: 10, secondPercent: 50 })
+  assert.equal((await measure('s3')).messages.length, 0)
+  rmSync(dir, { recursive: true, force: true })
+})
+
