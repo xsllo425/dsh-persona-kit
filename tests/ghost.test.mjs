@@ -38,6 +38,15 @@ test('affinity prompts keep family purely familial and name no gender for lovers
   assert.match(G.buildSystem('normal'), /预测用户/)
 })
 
+test('the normal prompt never invites the model to answer with nothing', () => {
+  // "output nothing if there is no obvious next step" is what made the grey line disappear exactly when the
+  // conversation had no obvious next step — which is most of the time.
+  const p = G.buildSystem('normal')
+  assert.match(p, /不要空着/)
+  assert.doesNotMatch(p, /什么都不要输出/)
+  assert.doesNotMatch(p, /output nothing/i)
+})
+
 test('a suggestion is one clean line, or nothing', () => {
   assert.equal(G.cleanSuggestion('“今天辛苦你了。”\n多余的解释'), '今天辛苦你了。')
   assert.equal(G.cleanSuggestion('1. 好的，继续'), '好的，继续')
