@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -52,7 +52,6 @@ test('apply() starts the whole host half: tools, the /role command, routes, even
   const h = fakeHost()
   mod.apply(h.ctx)
   assert.ok(h.tools.includes('send_sticker'))
-  assert.ok(h.tools.includes('handoff_new_session'))
   assert.ok(!h.tools.includes('enable_tools'), 'no tool groups configured: the gate stays out of the way')
   assert.deepEqual(h.commands, ['role'])
   assert.ok(h.routes.some((r) => r.path === '/persona-kit'))
@@ -83,6 +82,36 @@ test('a body that is not JSON is a 422, not a server error', async () => {
   assert.equal(status, 422)
 })
 
+test('an oversized body is a 413, not a server error', async () => {
+  const h = fakeHost()
+  mod.apply(h.ctx)
+  const route = h.routes.find((r) => r.path === '/persona-kit')
+  let status = 0
+  // 70 KB of JSON: over the 64 KB body cap, and nowhere near a crash
+  const body = JSON.stringify({ session: 's1', level: 3, pad: 'x'.repeat(70 * 1024) })
+  const req = Object.assign((async function* () { yield Buffer.from(body) })(), { url: '/persona-kit/level', method: 'POST', headers: { host: '127.0.0.1:1' }, socket: { remoteAddress: '127.0.0.1' } })
+  await route.handler(req, { writeHead: (s) => { status = s }, end() {} })
+  assert.equal(status, 413)
+})
+
+test('a level is only stored for a session the host knows', async () => {
+  const h = fakeHost()
+  const known = new Set(['session-real'])
+  // the host service that can answer for its sessions
+  h.ctx.get = (k) => (k === 'sessions' ? { get: (sid) => (known.has(sid) ? { id: sid, surface: { nodes: [] } } : undefined) } : undefined)
+  mod.apply(h.ctx)
+  const route = h.routes.find((r) => r.path === '/persona-kit')
+  const bad = await call(route, { url: '/persona-kit/level', method: 'POST', body: { session: 'no-such-session', level: 4 } })
+  assert.equal(bad.status, 422)
+  assert.equal(bad.json.error, 'unknown session')
+  // and nothing was written for it: the session still answers with the default level, not the refused one
+  const after = await call(route, { url: '/persona-kit/session?session=no-such-session' })
+  assert.equal(after.json.level, 3)
+  const ok = await call(route, { url: '/persona-kit/level', method: 'POST', body: { session: 'session-real', level: 4 } })
+  assert.equal(ok.status, 200)
+  assert.equal(ok.json.level, 4)
+})
+
 test('the avatar-settings answer carries what the sidebar needs even when no chat is open', async () => {
   const h = fakeHost()
   mod.apply(h.ctx)
@@ -111,9 +140,9 @@ test('a brand-new, empty DSH home starts cleanly and answers sensibly', async ()
     assert.equal((await call(route, { url: '/persona-kit/stats' })).json.roles.length, 0)
     const ach = (await call(route, { url: '/persona-kit/achievements?role=' })).json
     assert.equal(ach.ok, true)
-    assert.equal(ach.total, 32) // the 32 global badges: the 8 role ones need a role selected
+    assert.equal(ach.total, 27) // the 27 global badges: the 7 role ones need a role selected
     assert.deepEqual(ach.series.map((s) => s.id), ['chat', 'day', 'meet', 'bond', 'work', 'secret'])
-    assert.equal(ach.summary.total, 32)
+    assert.equal(ach.summary.total, 27)
     assert.equal(ach.summary.days, 0)
     const secret = ach.list.find((x) => x.id === 'secret-night')
     assert.equal(secret.hidden, true)

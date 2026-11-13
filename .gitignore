@@ -14,6 +14,9 @@ docs/waiting-phrases.md
 TODO.md
 AGENTS.md
 .dsh/
+# local scratch: badge art drafts and the generated repo map
+.badge-work/
+.chorography/
 docs/meme-merge-plan.md
 docs/status-line.md
 docs/handoff-meme-merge.md

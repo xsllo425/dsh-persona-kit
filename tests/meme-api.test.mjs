@@ -164,6 +164,17 @@ test('one pack can be listed, filtered and searched; all packs come back with th
   assert.ok(j.memes.every((m) => m.pack && m.url.startsWith(m.pack + '/')))
 })
 
+test('a pack id that does not exist is refused instead of answered with the active pack', async () => {
+  const handler = api().api
+  // a typo must not look like a perfectly good gallery of the wrong pictures
+  const bad = await req(handler, { url: '/persona-kit/memes-api?packId=../../etc' })
+  assert.equal(bad.status, 400)
+  assert.match(bad.body, /unknown pack/)
+  assert.equal((await req(handler, { url: '/persona-kit/memes-api?packId=no-such-pack' })).status, 400)
+  // no packId at all still means "the active one", which is what the picker sends on its first load
+  assert.equal((await req(handler, { url: '/persona-kit/memes-api' })).status, 200)
+})
+
 test('turning a pack off takes it out of what the model can draw from', async () => {
   const a = api()
   // both packs start enabled: the active one is the default

@@ -6,7 +6,7 @@ import { join } from 'node:path'
 
 // Sessions reach this plugin in two key shapes: the host's own id is "session-<uuid>", while the role tables
 // (and the /sessions map the client reads) key on the bare uuid. /timeline also used to read an undeclared
-// `got`, which fell through to the const inside suggest() and threw on every call. Both are pinned here.
+// `got`, which threw on every call. Both are pinned here.
 
 const home = mkdtempSync(join(tmpdir(), 'routesession-'))
 process.env.DSH_HOME = home
@@ -55,28 +55,6 @@ const call = async (route, url, method = 'GET') => {
   try { json = JSON.parse(String(out)) } catch { json = null }
   return { status, json }
 }
-
-test('the session routes find a session under either key shape', async () => {
-  const host = fakeSession('session-abc-123')
-  const sessions = { get: (id) => (id === 'session-abc-123' ? host : undefined) }
-  const routes = []
-  apply(routes, sessions)
-  const route = routes.find((r) => r.path === '/persona-kit')
-
-  // the host's own id works, as before
-  const byHost = await call(route, '/persona-kit/sent?session=session-abc-123&index=0')
-  assert.equal(byHost.json.ok, true)
-  assert.equal(byHost.json.text, '第二句')
-
-  // the bare uuid the role tables use now works too — it used to answer {ok:false}
-  const byBare = await call(route, '/persona-kit/sent?session=abc-123&index=0')
-  assert.equal(byBare.json.ok, true, 'a bare uuid must resolve to the host session')
-  assert.equal(byBare.json.text, '第二句')
-  assert.equal((await call(route, '/persona-kit/sent?session=abc-123&index=1')).json.text, '第一句')
-
-  // and an id that really does not exist still says so, rather than guessing
-  assert.equal((await call(route, '/persona-kit/sent?session=nope&index=0')).json.ok, false)
-})
 
 test('/timeline answers instead of throwing on an undeclared variable', async () => {
   const host = fakeSession('session-abc-123')

@@ -89,27 +89,6 @@
       "en": { "name": "Sticker tycoon", "desc": "Collect 100 stickers" }
     },
     {
-      "id": "rebirth-1", "name": "初次转生", "desc": "第一次转生到新会话",
-      "metric": "rebirthsTotal", "gte": 1, "series": "bond",
-      "en": { "name": "First rebirth", "desc": "Be reborn into a new session for the first time" }
-    },
-    {
-      "id": "rebirth-3", "name": "三世情缘", "desc": "转生三次",
-      "metric": "rebirthsTotal", "gte": 3, "series": "bond",
-      "en": { "name": "Three lives", "desc": "Be reborn three times" }
-    },
-    {
-      "id": "rebirth-10", "name": "十世同堂", "desc": "转生十次",
-      "metric": "rebirthsTotal", "gte": 10, "series": "bond",
-      "en": { "name": "Ten lives over", "desc": "Be reborn ten times" }
-    },
-    {
-      "id": "ghost-10", "name": "心有灵犀", "desc": "采纳过 10 次输入框里的灰字建议",
-      "metric": "ghostAccepts", "gte": 10, "series": "bond",
-      "en": { "name": "In tune", "desc": "Take 10 suggestions from the grey text in the box" }
-    },
-
-    {
       "id": "tasks-5", "name": "小有成就", "desc": "一起完成 5 件事（用到工具的回合）",
       "metric": "tasksTotal", "gte": 5, "series": "work",
       "en": { "name": "Getting things done", "desc": "Get 5 things done together (turns that used tools)" }
@@ -156,11 +135,6 @@
       "en": { "name": "No missed days", "desc": "Come back 60 days in a row" }
     },
     {
-      "id": "secret-rebirth", "name": "第 N 次初见", "desc": "转生二十五次",
-      "metric": "rebirthsTotal", "gte": 25, "series": "secret", "hidden": true,
-      "en": { "name": "Another first meeting", "desc": "Be reborn 25 times" }
-    },
-    {
       "id": "secret-tools", "name": "工具的另一头", "desc": "一起用过 500 次工具",
       "metric": "toolCalls", "gte": 500, "series": "secret", "hidden": true,
       "en": { "name": "The other end", "desc": "Use tools 500 times together" }
@@ -192,11 +166,6 @@
       "id": "r-sessions-5", "name": "常客", "desc": "和她聊过 5 个会话",
       "metric": "sessions", "gte": 5, "series": "role",
       "en": { "name": "Regular visitor", "desc": "Chat with her in 5 sessions" }
-    },
-    {
-      "id": "r-rebirth-1", "name": "她的第一世", "desc": "和她转生一次",
-      "metric": "rebirths", "gte": 1, "series": "role",
-      "en": { "name": "Her first life", "desc": "Be reborn with her once" }
     },
     {
       "id": "r-tasks-10", "name": "并肩作战", "desc": "和她一起完成 10 件事",

@@ -31,7 +31,7 @@ test('the shipped defaults are all valid and have unique ids', () => {
   const defs = A.collectDefs(raw)
   assert.equal(defs.length, raw.global.length + raw.role.length)
   assert.equal(new Set(defs.map((d) => d.scope + d.id)).size, defs.length)
-  assert.equal(defs.length, 40) // the catalog size the panel and the tests agree on
+  assert.equal(defs.length, 34) // the catalog size the panel and the tests agree on
   assert.ok(defs.filter((d) => d.hidden).length > 0)
 })
 

@@ -53,3 +53,41 @@ test('the same store can be flushed repeatedly without leaving temporaries', () 
   assert.deepEqual(readdirSync(dir).filter((n) => n.includes('.tmp')), [])
   rmSync(dir, { recursive: true, force: true })
 })
+
+// An older build credited the growth of a cumulative token counter, so a real file held 189,797,436 credited tokens
+// against a 198,187-token context and the bond meter read as permanently full. Loading must repair that on its own:
+// a running host keeps the whole file in memory, so an outside repair script only gets overwritten again.
+test('credited context that exceeds the session total is repaired on load', () => {
+  const dir = dirOf()
+  const file = join(dir, 'state.json')
+  writeFileSync(file, JSON.stringify({
+    version: 1,
+    sessions: {
+      bad: { tokens: 200_000, roleTokens: { whale: 189_797_436, other: 2_000_000 }, at: Date.now() },
+      fine: { tokens: 10_000, roleTokens: { whale: 9_000 }, at: Date.now() },
+    },
+  }))
+  const st = createStore(file)
+  const whale = st.roleTokensOf('bad', 'whale')
+  const other = st.roleTokensOf('bad', 'other')
+  assert.ok(whale > 0 && other > 0, 'the credits are scaled, not deleted')
+  assert.ok(whale + other <= 200_000, `the credits now fit the session total (got ${whale + other})`)
+  assert.ok(whale > other, 'the proportions between roles are kept')
+  assert.equal(st.roleTokensOf('fine', 'whale'), 9_000, 'a plausible reading is left alone')
+
+  st.flush()
+  const saved = JSON.parse(readFileSync(file, 'utf8'))
+  assert.ok(saved.sessions.bad.roleTokens.whale < 200_000, 'the repaired numbers reach disk without another write')
+  rmSync(dir, { recursive: true, force: true })
+})
+
+test('a store with nothing to repair does not rewrite the file on load', () => {
+  const dir = dirOf()
+  const file = join(dir, 'state.json')
+  writeFileSync(file, JSON.stringify({ version: 1, sessions: { s: { tokens: 10, roleTokens: { a: 5 }, at: Date.now() } } }))
+  const before = readFileSync(file, 'utf8')
+  const st = createStore(file)
+  st.flush()
+  assert.equal(readFileSync(file, 'utf8'), before, 'an untouched file stays byte-for-byte the same')
+  rmSync(dir, { recursive: true, force: true })
+})

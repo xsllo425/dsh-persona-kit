@@ -1,7 +1,7 @@
 {
   "name": "dsh-persona-kit",
   "version": "0.1.0",
-  "description": "Roles that feel like someone, for DeepSeek Harness: role switching, a 1-5 intensity slider, role-bound stickers, relationship tracks, rebirth, achievements, avatars, grey suggestions. 中英双语。",
+  "description": "Roles that feel like someone, for DeepSeek Harness: role switching, a 1-5 intensity slider, role-bound stickers, relationship tracks, achievements, avatars. 中英双语。",
   "type": "module",
   "license": "MIT",
   "main": "./lib/index.js",
@@ -30,6 +30,7 @@
     "defaults",
     "examples",
     "presets",
+    "assets",
     "tools",
     "cordis.patch.yml",
     "README.md",

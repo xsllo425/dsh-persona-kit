@@ -1,0 +1,8 @@
+{
+  "id": "gemini-chibi",
+  "name": "Gemini娘表情包",
+  "version": "1.0.0",
+  "maintainer": "DeepSeek Harness",
+  "license": "fan-made, non-commercial; not affiliated with Google",
+  "description": "Gemini娘表情包：以资料库 apprentice Q 版小图为母图基准、生成的 24 张聊天表情包切片，带透明底及对齐字幕，同人作品，仅供非商业使用。"
+}

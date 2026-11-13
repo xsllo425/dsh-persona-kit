@@ -1,7 +1,7 @@
 # Third-party notices
 
 dsh-persona-kit is MIT-licensed (see LICENSE). It contains no third-party source files. The following works
-influenced it; where wording or a selector pattern was reused, that is stated. All four are MIT-licensed
+influenced it; where wording or a selector pattern was reused, that is stated. Licences are noted per entry
 (checked on GitHub on 2026-11-01).
 
 ## dsh-persona-switcher — https://github.com/yupaoa/dsh-persona-switcher
@@ -15,31 +15,6 @@ compatible so the two can be swapped.
 MIT License
 
 Copyright (c) 2026 yupaoa
-
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
-documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
-rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit
-persons to whom the Software is furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all copies or substantial portions of the
-Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
-WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
-COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
-OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-```
-
-## dsh-next-prompt — https://github.com/Tleon-H/dsh-next-prompt
-Idea of a grey next-sentence overlay accepted with Tab / right arrow, and the facts about the host's composer that
-make it work (the input is a contenteditable `[data-composer-input]`, the placeholder must be hidden while the ghost
-shows, `useInput` / `inputActions` slot props). The placeholder-hiding selectors in `lib/client.js` follow the same
-pattern.
-
-```
-MIT License
-
-Copyright (c) 2026 Tleon-H
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 documentation files (the "Software"), to deal in the Software without restriction, including without limitation the

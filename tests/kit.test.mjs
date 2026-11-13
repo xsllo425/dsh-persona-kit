@@ -183,7 +183,7 @@ test('role list: only roles with a card, in card order', () => {
   assert.deepEqual(kit.cards.list().map((c) => c.id), ['alice', 'bob'])
 })
 
-test('bond: user turns, stickers and rebirth accumulate per role, not per session', () => {
+test('bond: user turns and stickers accumulate per role, not per session', () => {
   const kit = mk()
   const before = kit.store.roleStatsOf('alice').turns
   kit.userTurn('s1'); kit.userTurn('s1')
@@ -192,17 +192,13 @@ test('bond: user turns, stickers and rebirth accumulate per role, not per sessio
   const sess = kit.store.roleStatsOf('alice').sessions
   kit.userTurn('s1')
   assert.equal(kit.store.roleStatsOf('alice').sessions, sess) // same session is counted once
-  assert.equal(kit.rebirth('s1'), 'alice')
-  assert.equal(kit.store.roleStatsOf('alice').rebirths, 1)
-  assert.equal(kit.store.roleStatsOf('bob').rebirths, 0)
 })
 
-test('bond: the session view carries title, heat and the rebirth flag; the prompt carries only the title', () => {
-  const kit = mk({ triggerTokens: 1000 })
-  kit.store.setTokens('s1', 1200, 'alice')
+test('bond: the session view carries title, heat and the track; the prompt carries only the title', () => {
+  const kit = mk()
+  kit.store.setTokens('s1', 1_000_000, 'alice')
   const v = kit.session('s1')
-  assert.equal(v.bond.heat, 100)
-  assert.equal(v.bond.rebirthDue, true)
+  assert.equal(v.bond.heat, 100) // 1M tokens = 100% of the fixed full scale
   assert.ok(v.bond.title)
   const text = kit.promptFor('s1')
   assert.match(text, /目前的关系：/)
@@ -222,14 +218,6 @@ test('track and nickname: saved per role, change the prompt, reject unknown trac
   kit.setBond('s1', { track: 'not-a-track' })
   assert.equal(kit.session('s1').bond.track, 'younger')
   assert.equal(kit.setBond('s3', { track: 'lover' }), null) // no role, nothing to set
-})
-
-test('carry: a reborn session remembers which role to start as, once', () => {
-  const kit = mk()
-  kit.store.setCarry('child1', 'bob')
-  assert.equal(kit.session('child1').carryRole, 'bob')
-  kit.store.clearCarry('child1')
-  assert.equal(kit.session('child1').carryRole, '')
 })
 
 test('switching role inside one session keeps level, track, nickname and bond apart', () => {
@@ -289,23 +277,32 @@ test('a picture the user chose for a role beats the card picture, and the sessio
   assert.equal(kit.session('s1').avatar, '')
 })
 
-test('heat is credited to the role that was speaking; the session total still drives the rebirth', () => {
-  const kit = mk({ triggerTokens: 1000 })
-  kit.store.setTokens('h1', 300, 'alice')
-  kit.store.setTokens('h1', 700, 'bob') // 400 more, while bob spoke
-  kit.store.setTokens('h1', 800, 'alice') // 100 more
-  assert.equal(kit.store.roleTokensOf('h1', 'alice'), 400)
-  assert.equal(kit.store.roleTokensOf('h1', 'bob'), 400)
-  assert.equal(kit.store.tokensOf('h1'), 800)
+test('heat is credited to the role that was speaking', () => {
+  const kit = mk()
+  kit.store.setTokens('h1', 300_000, 'alice')
+  kit.store.setTokens('h1', 700_000, 'bob') // 400k more, while bob spoke
+  kit.store.setTokens('h1', 800_000, 'alice') // 100k more
+  assert.equal(kit.store.roleTokensOf('h1', 'alice'), 400_000)
+  assert.equal(kit.store.roleTokensOf('h1', 'bob'), 400_000)
+  assert.equal(kit.store.tokensOf('h1'), 800_000)
   const sessions = JSON.parse(readFileSync(kit.config.roleSessionsFile, 'utf8'))
   sessions.sessions.h1 = { role: 'bob' }
   writeFileSync(kit.config.roleSessionsFile, JSON.stringify(sessions))
   const b = kit.session('h1').bond
-  assert.equal(b.heat, 40) // bob's own share
+  assert.equal(b.heat, 40) // bob's own share (400k / 1M full scale)
   assert.equal(b.sessionHeat, 80) // the whole context
-  assert.equal(b.rebirthDue, false)
-  kit.store.setTokens('h1', 200, 'bob') // compaction: the total can shrink, nothing is credited
-  assert.equal(kit.store.roleTokensOf('h1', 'bob'), 400)
+  kit.store.setTokens('h1', 200_000, 'bob') // compaction: the total can shrink, nothing is credited
+  assert.equal(kit.store.roleTokensOf('h1', 'bob'), 400_000)
+})
+
+test('a recorded window is what the heat bar reads, not an absolute count', () => {
+  const kit = mk()
+  const sessions = JSON.parse(readFileSync(kit.config.roleSessionsFile, 'utf8'))
+  sessions.sessions.p1 = { role: 'alice' }
+  writeFileSync(kit.config.roleSessionsFile, JSON.stringify(sessions))
+  kit.store.setTokens('p1', 200_000, 'alice', 1_000_000)
+  const b = kit.session('p1').bond
+  assert.equal(b.sessionHeat, 20) // 200k of a 1M window
 })
 
 test('each relationship track keeps its own history; switching never erases or mixes', () => {
@@ -353,16 +350,14 @@ test('numbers from before tracks existed go to the track the role was on', () =>
   const kit = mk()
   // a role that already had old-style totals and a non-default track
   const snap = kit.store.snapshot()
-  snap.roles.legacy = { turns: 50, stickers: 5, rebirths: 1, sessions: 3 }
+  snap.roles.legacy = { turns: 50, stickers: 5, sessions: 3 }
   snap.roleSettings.legacy = { track: 'younger', nickname: '' }
   const b = kit.store.bondOf('legacy')
   assert.equal(b.turns, 50)
-  assert.equal(b.rebirths, 1)
   assert.equal(kit.store.bondOf('legacy', 'friend').turns, 0)
 })
 
-test('achievements: real events unlock them once, the panel lists progress, and "seen" clears the news', () => {
-  const kit = mk()
+test('achievements: real events unlock them once, the panel lists progress, and "seen" clears the news', () => {  const kit = mk()
   const sessions = JSON.parse(readFileSync(kit.config.roleSessionsFile, 'utf8'))
   sessions.sessions.ac = { role: 'bob' }
   writeFileSync(kit.config.roleSessionsFile, JSON.stringify(sessions))
@@ -378,6 +373,14 @@ test('achievements: real events unlock them once, the panel lists progress, and 
   kit.store.markSeen(kit.freshAchievements().map((a) => a.key))
   assert.equal(kit.freshAchievements().length, 0)
   assert.ok(had.size <= Object.keys(kit.store.unlocked()).length)
+})
+
+test('a badge whose definition left the library is not re-examined forever', () => {
+  const kit = mk()
+  kit.store.unlock('ghost-10') // e.g. a badge that shipped once and was withdrawn
+  assert.ok(!kit.freshAchievements().some((a) => a.key === 'ghost-10'))
+  // it has no definition, so there is nothing to show: marking it read is the only way to stop the scan
+  assert.equal(kit.store.unlocked()['ghost-10'].seen, true)
 })
 
 test('achievements: a turn that used tools counts as a thing done, credited to the role that did it', () => {

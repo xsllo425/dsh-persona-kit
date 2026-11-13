@@ -25,23 +25,21 @@ test('client module loads and apply() registers a dock + slot without throwing',
   }
   const ctx = { effect() {}, slots }
   m.apply(ctx)
-  // the pill and the ghost line were there first; the meme picker adds its button on the left and its board
-  // in the overlay, so the list is no longer just the two originals
+  // the pill was there first; the meme picker adds its button on the left and its board in the overlay,
+  // so the list is no longer just the original one
   assert.deepEqual(injected, [
     'conversation.input.right',
-    'conversation.input.overlay',
     'conversation.input.left',
     'conversation.input.overlay',
   ])
   assert.equal(sandbox.window.__dshComposerDockQueue.length, 1)
   assert.equal(sandbox.window.__dshComposerDockQueue[0].id, 'persona-kit')
-  // the meme slots carry their own ids and orders, so they sit beside the ghost line instead of on top of it
+  // the meme slots carry their own ids and orders, so the board sits in the overlay slot
   const memeSlots = registered.filter((r) => r.id === 'persona-kit-memes')
   assert.equal(memeSlots.length, 2)
   assert.equal(memeSlots[0].name, 'conversation.input.left')
   assert.equal(memeSlots[1].name, 'conversation.input.overlay')
   assert.equal(memeSlots[1].order, 42)
-  assert.ok(memeSlots[1].order > 41, 'the board must sit above the ghost line')
 })
 
 test('a session switch draws the role /sessions already knows instead of falling back to the bare label', async () => {
