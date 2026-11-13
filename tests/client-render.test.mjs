@@ -13,20 +13,25 @@ const memes = [
 ]
 
 // `rows` lets a test decide how many stickers the library reports, which is what the grid pages over.
-function load(rows = memes) {
+// `opts.stored` pre-fills localStorage, `opts.sizes` collects every --pk-av-size write, and `opts.timers`
+// runs scheduled work at once so a test can see what the first paint (scan -> applyAvatars) writes.
+function load(rows = memes, opts = {}) {
   let mod
+  const stored = opts.stored || {}
+  const sizes = opts.sizes || []
   const sandbox = {
     window: {
       __ModuleLoader__: { load: (m) => { mod = m } },
-      localStorage: { getItem: () => null, setItem() {} },
-      setTimeout: () => 0, clearTimeout() {}, setInterval: () => 0, clearInterval() {},
+      localStorage: { getItem: (k) => (k in stored ? stored[k] : null), setItem: (k, v) => { stored[k] = String(v) } },
+      setTimeout: opts.timers ? (fn) => { try { fn() } catch (e) {} return 0 } : () => 0,
+      clearTimeout() {}, setInterval: () => 0, clearInterval() {},
       addEventListener() {}, removeEventListener() {}, requestAnimationFrame: () => 0,
       getComputedStyle: () => ({}), location: { origin: 'http://127.0.0.1:1' },
       innerWidth: 1200, innerHeight: 900, __forceOpen: true,
     },
     document: {
       addEventListener() {}, removeEventListener() {}, getElementById: () => null, createElement: el,
-      head: { appendChild() {} }, body: {}, documentElement: { style: { setProperty() {} }, getAttribute: () => '', setAttribute() {} },
+      head: { appendChild() {} }, body: {}, documentElement: { style: { setProperty: (k, v) => { if (k === '--pk-av-size') sizes.push(String(v)) } }, getAttribute: () => '', setAttribute() {} },
       visibilityState: 'visible', querySelectorAll: () => [], querySelector: () => null,
       // the board re-scans the page for sticker text after the library loads; without a walker that
       // throw is swallowed by the fetch chain's .catch and setData never runs, which looks like "no data"
@@ -68,7 +73,31 @@ test('every registered slot renders, with data', () => {
   }
 })
 
-// A board that silently stops at a cap is exactly what users report as "some stickers are missing",
+// Opening or switching a session drops its /session answer to null until the request lands. The picture must
+// keep the size the user chose: the old fallback wrote the 30px default for that moment and jumped back to
+// 50px when the answer arrived, which users see as "the picture shrinks, then grows".
+test('opening a session does not reset the picture to the default size', () => {
+  const sizes = []
+  const stored = { 'dsh-persona-kit/avatar-settings': JSON.stringify({ ai: true, user: true, name: true, size: 50, layout: 'top', meta: 'both' }) }
+  const { mod } = load(memes, { stored, sizes, timers: true })
+  const fakeReact = {
+    createElement: (type, props, ...kids) => (typeof type === 'function' ? type({ ...(props || {}), children: kids.length ? kids : undefined }) : [type, props || null, ...kids]),
+    useState: (init) => [typeof init === 'function' ? init() : init, () => {}],
+    useRef: (v) => ({ current: v === undefined ? null : v }),
+    useEffect: (fn) => { try { fn() } catch (e) {} },
+    useLayoutEffect() { }, useMemo: (f) => f(), useCallback: (f) => f,
+    useSyncExternalStore: () => false,
+  }
+  const m = mod.factory(() => fakeReact)
+  const captured = []
+  m.apply({ effect() { }, slots: { inject: (_n, cb) => cb(), register: (def, fn) => { captured.push({ def, fn }); return () => { } } } })
+  for (const c of captured) {
+    try { c.fn({ sessionId: 's1', useInput: () => ({ draft: '' }), inputActions: { setDraft() { }, submit() { } } }) } catch (e) { }
+  }
+  assert.ok(sizes.length > 0, 'the picture size is written at least once')
+  assert.deepEqual(sizes.filter((s) => s !== '50px'), [], 'the size stays at the remembered 50px while /session is in flight')
+})
+
 // so paging is asserted as behaviour: one page first, the rest on demand, and the count tells the truth.
 test('the sticker board pages instead of dropping the tail', async () => {
   const many = Array.from({ length: 300 }, (_, i) => ({
